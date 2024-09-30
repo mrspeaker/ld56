@@ -1,0 +1,19 @@
+{
+    "name": "ld56",
+    "description": "ld56",
+    "version": "0.1",
+    "author": "",
+    "license": "",
+    "scripts": {
+        "dev": "vite --config vite/config.dev.mjs",
+        "build": "vite build --config vite/config.prod.mjs"
+    },
+    "devDependencies": {
+        "terser": "^5.31.0",
+        "typescript": "^5.4.5",
+        "vite": "^5.3.1"
+    },
+    "dependencies": {
+        "phaser": "^3.85.2"
+    }
+}
