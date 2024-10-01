@@ -31,11 +31,10 @@ export class Preloader extends Scene {
             frames: this.anims.generateFrameNumbers("walk", {
                 frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             }),
-            frameRate: 8,
+            frameRate: 10,
             repeat: -1,
         });
 
-        //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
         this.scene.start("MainMenu");
     }
 }

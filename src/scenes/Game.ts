@@ -33,5 +33,24 @@ export class Game extends Scene {
         const cody = this.add.sprite(100, 100);
         cody.setScale(1);
         cody.play("walk");
+
+        console.log(Phaser.Math.Between(0, 10));
+        const group = this.add.group({ key: "walk", frameQuantity: 30 });
+        //group.playAnimation("walk", Phaser.Math.Between(0, 10));
+        group
+            .getChildren()
+            .forEach((c) =>
+                c.playAfterDelay("walk", Phaser.Math.Between(0, 1500)),
+            );
+
+        const rect = new Phaser.Geom.Rectangle(
+            0,
+            0,
+            this.sys.game.scale.gameSize.width,
+            this.sys.game.scale.gameSize.height,
+        );
+
+        //  Randomly position the sprites within the rectangle
+        Phaser.Actions.RandomRectangle(group.getChildren(), rect);
     }
 }
