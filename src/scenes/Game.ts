@@ -4,6 +4,7 @@ export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
     msg_text: Phaser.GameObjects.Text;
+    cody: Phaser.GameObjects.Sprite;
 
     constructor() {
         super("Game");
@@ -31,10 +32,15 @@ export class Game extends Scene {
         });
 
         const cody = this.add.sprite(100, 100);
-        cody.setScale(1);
+        cody.setScale(3);
         cody.play("walk");
+        this.cody = cody;
 
-        console.log(Phaser.Math.Between(0, 10));
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.space = this.input.keyboard.addKey(
+            Phaser.Input.Keyboard.KeyCodes.SPACE,
+        );
+
         const group = this.add.group({ key: "walk", frameQuantity: 30 });
         //group.playAnimation("walk", Phaser.Math.Between(0, 10));
         group
@@ -52,5 +58,37 @@ export class Game extends Scene {
 
         //  Randomly position the sprites within the rectangle
         Phaser.Actions.RandomRectangle(group.getChildren(), rect);
+    }
+
+    update() {
+        const { cody, cursors, space } = this;
+        let xo = 0;
+        let yo = 0;
+        if (space.isDown) {
+            xo += 10;
+        }
+
+        if (cursors.right.isDown) {
+            xo++;
+        }
+        if (cursors.left.isDown) {
+            xo--;
+        }
+        if (cursors.down.isDown) {
+            yo++;
+        }
+        if (cursors.up.isDown) {
+            yo--;
+        }
+
+        // Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), this.dragon.getBounds())
+
+        if (xo || yo) {
+            cody.x += xo;
+            cody.y += yo;
+            cody.play("walk", true);
+        } else {
+            cody.stop();
+        }
     }
 }
