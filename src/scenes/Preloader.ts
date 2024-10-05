@@ -31,6 +31,10 @@ export class Preloader extends Scene {
             frameWidth: 64,
             frameHeight: 64,
         });
+        this.load.spritesheet("drop", "drop.png", {
+            frameWidth: 64,
+            frameHeight: 64,
+        });
     }
 
     create() {
@@ -54,6 +58,12 @@ export class Preloader extends Scene {
             key: "blerb2",
             frames: this.anims.generateFrameNumbers("blerb2"),
             frameRate: 10,
+            repeat: -1,
+        });
+        this.anims.create({
+            key: "drop",
+            frames: this.anims.generateFrameNumbers("drop"),
+            frameRate: 12,
             repeat: -1,
         });
 
