@@ -24,16 +24,20 @@ export class Preloader extends Scene {
             frameHeight: 64 * 1,
         });
         this.load.spritesheet("blerb", "blerb.png", {
-            frameWidth: 64,
-            frameHeight: 64,
+            frameWidth: 128,
+            frameHeight: 128,
         });
         this.load.spritesheet("blerb2", "blerb2.png", {
-            frameWidth: 64,
-            frameHeight: 64,
+            frameWidth: 128,
+            frameHeight: 128,
         });
         this.load.spritesheet("drop", "drop.png", {
             frameWidth: 64,
             frameHeight: 64,
+        });
+        this.load.spritesheet("bot1", "bot1.png", {
+            frameWidth: 128,
+            frameHeight: 128,
         });
     }
 
@@ -66,7 +70,24 @@ export class Preloader extends Scene {
             frameRate: 12,
             repeat: -1,
         });
-
+        this.anims.create({
+            key: "bot1",
+            frames: this.anims.generateFrameNumbers("bot1", {
+                start: 0,
+                end: 9,
+            }),
+            frameRate: 10,
+            repeat: -1,
+        });
+        this.anims.create({
+            key: "bot1_die",
+            frames: this.anims.generateFrameNumbers("bot1", {
+                start: 10,
+                end: 19,
+            }),
+            frameRate: 10,
+            repeat: -1,
+        });
         this.scene.start("MainMenu");
     }
 }

@@ -46,7 +46,7 @@ export class Game extends Scene {
         // this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
         this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
 
-        const cell_size = 130;
+        const cell_size = 180;
         const cell_pad = 0;
         const total_width = this.NUM_COLS * (cell_size + cell_pad) - cell_pad;
         const total_height = this.NUM_ROWS * (cell_size + cell_pad) - cell_pad;
@@ -179,13 +179,20 @@ export class Game extends Scene {
     }
 
     update() {
-        const { keys, cells, turrets } = this;
+        const { keys, cells, turrets, camera } = this;
 
         cells.forEach((c) => {
             c.update();
             if (!c.target) {
                 // dead.
-                c.visible = false;
+                //c.visible = false;
+                const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
+                c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
+                c.target = new Phaser.Geom.Point(
+                    camera.centerX,
+                    camera.centerY,
+                );
             }
         });
 
@@ -211,17 +218,19 @@ export class Game extends Scene {
                         // score!
                         this.score += 1;
                         this.mole_cell_bg[i].fillColor = 0x006600;
+                        this.slot_gfx[i].play("bot1_die");
                     } else {
                         // brrrrp!
                         this.score -= 20;
                         this.mole_cell_bg[i].fillColor = 0x440000;
+                        this.slot_gfx[i].visible = false;
                     }
                     this.tweens.add({
                         targets: this.mole_cell_bg[i],
                         alpha: 0,
                     });
                     this.score_text.text = this.score;
-                    this.slot_gfx[i].visible = false;
+                    //                    this.slot_gfx[i].visible = false;
                 }
 
                 if (m.timer-- <= 0) {
@@ -232,11 +241,15 @@ export class Game extends Scene {
                 if (Phaser.Math.Between(0, 200) == 1) {
                     m.alive = true;
                     m.timer = 150;
-                    m.type = Phaser.Math.Between(0, 100) < 65 ? 0 : 1;
+                    m.type =
+                        Phaser.Math.Between(0, 100) < 65
+                            ? 0
+                            : Phaser.Math.Between(0, 100) < 50
+                            ? 1
+                            : 2;
                     this.slot_gfx[i].fillColor = 0x333333;
-
                     this.slot_gfx[i].visible = true;
-                    this.slot_gfx[i].play(["blerb2", "blerb"][m.type]);
+                    this.slot_gfx[i].play(["bot1", "blerb", "blerb2"][m.type]);
                 }
             }
         });
