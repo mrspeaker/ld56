@@ -53,7 +53,7 @@ export class Game extends Scene {
             this.camera.centerY,
             "background",
         );
-        this.bg.setAlpha(0.5);
+        this.bg.setAlpha(0.3);
         this.bg.setDisplaySize(this.camera.width, this.camera.height);
         this.bg.postFX.addVignette(0.5, 0.5, 0.6);
 
@@ -97,15 +97,6 @@ export class Game extends Scene {
                 cell.setTint(0xffffff);
             });
         }
-
-        const r = this.add.rectangle(
-            camera.centerX,
-            camera.centerY,
-            total_width,
-            total_height,
-            0x111111,
-        );
-        r.alpha = 0.9;
 
         const cell_bg = this.add.group();
         cell_bg.setDepth(2);
