@@ -23,6 +23,14 @@ export class Preloader extends Scene {
             frameWidth: 64 * 1,
             frameHeight: 64 * 1,
         });
+        this.load.spritesheet("blerb", "blerb.png", {
+            frameWidth: 64,
+            frameHeight: 64,
+        });
+        this.load.spritesheet("blerb2", "blerb2.png", {
+            frameWidth: 64,
+            frameHeight: 64,
+        });
     }
 
     create() {
@@ -31,6 +39,20 @@ export class Preloader extends Scene {
             frames: this.anims.generateFrameNumbers("walk", {
                 frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             }),
+            frameRate: 10,
+            repeat: -1,
+        });
+
+        this.anims.create({
+            key: "blerb",
+            frames: this.anims.generateFrameNumbers("blerb"),
+            frameRate: 10,
+            repeat: -1,
+        });
+
+        this.anims.create({
+            key: "blerb2",
+            frames: this.anims.generateFrameNumbers("blerb2"),
             frameRate: 10,
             repeat: -1,
         });

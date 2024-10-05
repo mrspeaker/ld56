@@ -22,6 +22,8 @@ export class Game extends Scene {
     NUM_ROWS = 2;
     NUM_MOLES = 6;
 
+    score = 0;
+
     constructor() {
         super("Game");
     }
@@ -34,10 +36,10 @@ export class Game extends Scene {
         //this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
         this.camera.postFX.addVignette(0.5, 0.5, 0.9);
 
-        this.background = add.image(512, 384, "background");
-        this.background.setAlpha(0.5);
+        //this.background = add.image(512, 384, "background");
+        //this.background.setAlpha(0.5);
 
-        this.msg_text = add.text(512, 384, "LD56", {
+        const score = add.text(512, 384, "LD56", {
             fontFamily: "Arial Black",
             fontSize: 38,
             color: "#ffffff",
@@ -45,7 +47,9 @@ export class Game extends Scene {
             strokeThickness: 8,
             align: "center",
         });
-        this.msg_text.setOrigin(0.5);
+        score.setOrigin(0.5);
+        score.y = 20;
+        this.score_text = score;
 
         input.once("pointerdown", () => {
             this.scene.start("GameOver");
@@ -69,7 +73,7 @@ export class Game extends Scene {
         const cell_bg = this.add.group();
         cell_bg.setDepth(2);
         this.mole_cell_gfx = this.add
-            .group({ key: "walk", frameQuantity: this.NUM_MOLES })
+            .group({ key: "blerb", frameQuantity: this.NUM_MOLES })
             .setDepth(1)
             .getChildren();
 
@@ -91,7 +95,7 @@ export class Game extends Scene {
                 gap_y;
 
             cell_bg.add(
-                this.add.rectangle(x, y, cell_size, cell_size, 0x888888),
+                this.add.rectangle(x, y, cell_size, cell_size, 0x333333),
                 true,
             );
             this.mole_cells.push(new MoleCell());
@@ -100,6 +104,9 @@ export class Game extends Scene {
             this.mole_cell_gfx[i].y = y;
             this.mole_cell_gfx[i].visible = false;
         }
+        const mole_cell_bg = cell_bg.getChildren();
+        this.mole_cell_bg = mole_cell_bg;
+        mole_cell_bg.forEach((c) => (c.alpha = 0));
 
         this.cursors = input.keyboard.createCursorKeys();
         this.space = input.keyboard.addKey(KeyCodes.SPACE);
@@ -171,6 +178,22 @@ export class Game extends Scene {
             if (m.alive) {
                 if (keys[i].isDown) {
                     m.alive = false;
+                    this.mole_cell_bg[i].alpha = 1;
+
+                    if (m.type == 0) {
+                        // score!
+                        this.score += 1;
+                        this.mole_cell_bg[i].fillColor = 0x006600;
+                    } else {
+                        // brrrrp!
+                        this.score -= 20;
+                        this.mole_cell_bg[i].fillColor = 0x440000;
+                    }
+                    this.tweens.add({
+                        targets: this.mole_cell_bg[i],
+                        alpha: 0,
+                    });
+                    this.score_text.text = this.score;
                     this.mole_cell_gfx[i].visible = false;
                 }
 
@@ -182,7 +205,11 @@ export class Game extends Scene {
                 if (Phaser.Math.Between(0, 100) == 1) {
                     m.alive = true;
                     m.timer = 150;
+                    m.type = Phaser.Math.Between(0, 100) < 80 ? 0 : 1;
+                    this.mole_cell_bg[i].fillColor = 0x333333;
+
                     this.mole_cell_gfx[i].visible = true;
+                    this.mole_cell_gfx[i].play(["blerb2", "blerb"][m.type]);
                 }
             }
         });
