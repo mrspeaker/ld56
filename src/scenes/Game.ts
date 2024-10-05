@@ -123,11 +123,13 @@ export class Game extends Scene {
                 true,
             );
 
-            this.add.text(x - 50, y - 50, "QWERASD".split("")[i], {
+            const txt = this.add.text(x - 50, y - 50, "QWERASD".split("")[i], {
                 fontFamily: "Arial Black",
                 fontSize: 18,
                 color: "#ffffff",
             });
+            txt.x += cell_size / 4;
+            txt.y += ((i >= this.NUM_COLS ? 2.8 : -1) * cell_size) / 4;
             this.slots.push(new Slot());
             this.slot_gfx[i].x = x;
             this.slot_gfx[i].y = y;
