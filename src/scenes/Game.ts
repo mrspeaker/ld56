@@ -1,6 +1,7 @@
 import { Scene } from "phaser";
 import { Cell } from "../cell.ts";
 import { Turret } from "../turret.ts";
+import { Bullet } from "../bullet.ts";
 
 const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
@@ -23,6 +24,9 @@ export class Game extends Scene {
 
     static MAX_CELLS = 30;
     cells: Cell[] = [];
+    turrets: Turret[] = [];
+
+    cell_layer: Phaser.GameObjects.Group;
 
     NUM_COLS = 3;
     NUM_ROWS = 2;
@@ -97,9 +101,10 @@ export class Game extends Scene {
             });
         }
 
-        this.turrets = this.add.group();
+        const turrets = this.add.group();
         const t = new Turret(this, 50, 50);
-        this.turrets.add(t, true);
+        this.turrets.push(t);
+        turrets.add(t, true);
 
         const r = this.add.rectangle(
             camera.centerX,
@@ -174,13 +179,25 @@ export class Game extends Scene {
     }
 
     update() {
-        const { keys, camera, cells } = this;
+        const { keys, cells, turrets } = this;
 
         cells.forEach((c) => {
             c.update();
             if (!c.target) {
                 // dead.
                 c.visible = false;
+            }
+        });
+
+        turrets.forEach((t) => {
+            const target = t.update(cells);
+            if (target) {
+                // shoot!
+                console.log("shoooo", target.x, target.y, true);
+                this.cell_layer?.add(
+                    new Bullet(this, target.x, target.y),
+                    true,
+                );
             }
         });
 
