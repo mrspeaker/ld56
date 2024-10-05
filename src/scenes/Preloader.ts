@@ -85,8 +85,8 @@ export class Preloader extends Scene {
                 start: 10,
                 end: 19,
             }),
-            frameRate: 10,
-            repeat: -1,
+            frameRate: 20,
+            repeat: 0,
         });
         this.scene.start("MainMenu");
     }

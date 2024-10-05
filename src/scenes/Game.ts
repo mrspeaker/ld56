@@ -1,11 +1,9 @@
 import { Scene } from "phaser";
 import { Cell } from "../cell.ts";
-import { Turret } from "../turret.ts";
-import { Bullet } from "../bullet.ts";
 
 const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
-class MoleCell {
+class Slot {
     type: number;
     alive: boolean = false;
     timer: number = 0;
@@ -19,12 +17,11 @@ export class Game extends Scene {
 
     keys: Phaser.Input.Keyboard.Key[];
 
-    slots: MoleCell[] = [];
+    slots: Slot[] = [];
     slot_gfx: Phaser.GameObjects.GameObject[] = [];
 
     static MAX_CELLS = 30;
     cells: Cell[] = [];
-    turrets: Turret[] = [];
 
     cell_layer: Phaser.GameObjects.Group;
 
@@ -101,11 +98,6 @@ export class Game extends Scene {
             });
         }
 
-        const turrets = this.add.group();
-        const t = new Turret(this, 50, 50);
-        this.turrets.push(t);
-        turrets.add(t, true);
-
         const r = this.add.rectangle(
             camera.centerX,
             camera.centerY,
@@ -139,22 +131,19 @@ export class Game extends Scene {
                 this.add.rectangle(x, y, cell_size, cell_size, 0x333333),
                 true,
             );
-            //cell_bg.add(
+
             this.add.text(x - 50, y - 50, "QWERASD".split("")[i], {
                 fontFamily: "Arial Black",
                 fontSize: 18,
                 color: "#ffffff",
-            }),
-                //);
-
-                this.slots.push(new MoleCell());
+            });
+            this.slots.push(new Slot());
             this.slot_gfx[i].x = x;
             this.slot_gfx[i].y = y;
             this.slot_gfx[i].visible = false;
         }
-        const mole_cell_bg = cell_bg.getChildren();
-        this.mole_cell_bg = mole_cell_bg;
-        mole_cell_bg.forEach((c) => (c.alpha = 0));
+        const slot_bg = (this.slot_bg = cell_bg.getChildren());
+        slot_bg.forEach((c) => (c.alpha = 0));
 
         this.keys = [
             input.keyboard.addKey(KeyCodes.Q),
@@ -179,7 +168,7 @@ export class Game extends Scene {
     }
 
     update() {
-        const { keys, cells, turrets, camera } = this;
+        const { keys, cells, camera, slots, slot_bg } = this;
 
         cells.forEach((c) => {
             c.update();
@@ -196,41 +185,28 @@ export class Game extends Scene {
             }
         });
 
-        turrets.forEach((t) => {
-            const target = t.update(cells);
-            if (target) {
-                // shoot!
-                console.log("shoooo", target.x, target.y, true);
-                this.cell_layer?.add(
-                    new Bullet(this, target.x, target.y),
-                    true,
-                );
-            }
-        });
-
-        this.slots.forEach((m, i) => {
+        slots.forEach((m, i) => {
             if (m.alive) {
                 if (keys[i].isDown) {
                     m.alive = false;
-                    this.mole_cell_bg[i].alpha = 1;
 
                     if (m.type == 0) {
                         // score!
                         this.score += 1;
-                        this.mole_cell_bg[i].fillColor = 0x006600;
                         this.slot_gfx[i].play("bot1_die");
                     } else {
                         // brrrrp!
+                        slot_bg[i].alpha = 1;
+
                         this.score -= 20;
-                        this.mole_cell_bg[i].fillColor = 0x440000;
+                        this.slot_bg[i].fillColor = 0x440000;
                         this.slot_gfx[i].visible = false;
                     }
                     this.tweens.add({
-                        targets: this.mole_cell_bg[i],
+                        targets: this.slot_bg[i],
                         alpha: 0,
                     });
                     this.score_text.text = this.score;
-                    //                    this.slot_gfx[i].visible = false;
                 }
 
                 if (m.timer-- <= 0) {
@@ -247,7 +223,6 @@ export class Game extends Scene {
                             : Phaser.Math.Between(0, 100) < 50
                             ? 1
                             : 2;
-                    this.slot_gfx[i].fillColor = 0x333333;
                     this.slot_gfx[i].visible = true;
                     this.slot_gfx[i].play(["bot1", "blerb", "blerb2"][m.type]);
                 }
