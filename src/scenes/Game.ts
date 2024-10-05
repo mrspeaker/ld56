@@ -1,4 +1,6 @@
 import { Scene } from "phaser";
+import { Cell } from "../cell.ts";
+import { Turret } from "../turret.ts";
 
 const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
@@ -18,7 +20,9 @@ export class Game extends Scene {
 
     slots: MoleCell[] = [];
     slot_gfx: Phaser.GameObjects.GameObject[] = [];
-    cells: Phaser.GameObjects.GameObject[] = [];
+
+    static MAX_CELLS = 30;
+    cells: Cell[] = [];
 
     NUM_COLS = 3;
     NUM_ROWS = 2;
@@ -34,9 +38,9 @@ export class Game extends Scene {
         const { add, input } = this;
 
         const camera = (this.camera = this.cameras.main);
-        // this.camera.setBackgroundColor(0x00ff00);
+        this.camera.setBackgroundColor(0x000000);
         // this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
-        this.camera.postFX.addVignette(0.5, 0.5, 0.9);
+        this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
 
         const cell_size = 130;
         const cell_pad = 0;
@@ -50,6 +54,8 @@ export class Game extends Scene {
         );
         this.bg.setAlpha(0.5);
         this.bg.setDisplaySize(this.camera.width, this.camera.height);
+        this.bg.postFX.addVignette(0.5, 0.5, 0.6);
+
         const score = add.text(512, 384, "LD56", {
             fontFamily: "Arial Black",
             fontSize: 38,
@@ -68,40 +74,41 @@ export class Game extends Scene {
 
         if (!input.keyboard) return;
 
-        const group = this.add.group();
-        for (let i = 0; i < 30; i++) {
-            const cell = this.add.sprite(0, 0, "drop").setInteractive();
-            group.add(cell);
-            //group.playAnimation("walk", Phaser.Math.Between(0, 10));
+        const cell_group = this.add.group();
+        for (let i = 0; i < Game.MAX_CELLS; i++) {
+            const cell = new Cell(this, 0, 0);
+            this.cells.push(cell);
+            cell_group.add(cell, true);
+            cell.target = new Phaser.Geom.Point(camera.centerX, camera.centerY);
+            const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            cell.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
+            cell.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
 
             cell.playAfterDelay("drop", Phaser.Math.Between(0, 1500));
             cell.on("pointerdown", () => {
-                cell.visible = false;
+                //cell.visible = false;
+                cell.target = null;
             });
             cell.on("pointerover", () => {
-                cell.setTint(0xff0000);
+                cell.setTint(0x00ff00);
             });
             cell.on("pointerout", () => {
                 cell.setTint(0xffffff);
             });
         }
 
-        this.cells = group.getChildren();
-        this.cells.forEach((c) => {
-            c.angle = Phaser.Math.Angle.RandomDegrees();
-            c.setScale(0.65);
-            const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
-            c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
-        });
+        this.turrets = this.add.group();
+        const t = new Turret(this, 50, 50);
+        this.turrets.add(t, true);
 
-        this.add.rectangle(
+        const r = this.add.rectangle(
             camera.centerX,
             camera.centerY,
             total_width,
             total_height,
-            0x000000,
+            0x111111,
         );
+        r.alpha = 0.9;
 
         const cell_bg = this.add.group();
         cell_bg.setDepth(2);
@@ -127,7 +134,15 @@ export class Game extends Scene {
                 this.add.rectangle(x, y, cell_size, cell_size, 0x333333),
                 true,
             );
-            this.slots.push(new MoleCell());
+            //cell_bg.add(
+            this.add.text(x - 50, y - 50, "QWERASD".split("")[i], {
+                fontFamily: "Arial Black",
+                fontSize: 18,
+                color: "#ffffff",
+            }),
+                //);
+
+                this.slots.push(new MoleCell());
             this.slot_gfx[i].x = x;
             this.slot_gfx[i].y = y;
             this.slot_gfx[i].visible = false;
@@ -136,8 +151,6 @@ export class Game extends Scene {
         this.mole_cell_bg = mole_cell_bg;
         mole_cell_bg.forEach((c) => (c.alpha = 0));
 
-        this.cursors = input.keyboard.createCursorKeys();
-        this.space = input.keyboard.addKey(KeyCodes.SPACE);
         this.keys = [
             input.keyboard.addKey(KeyCodes.Q),
             input.keyboard.addKey(KeyCodes.W),
@@ -147,66 +160,28 @@ export class Game extends Scene {
             input.keyboard.addKey(KeyCodes.D),
         ];
 
-        const cody = add.sprite(100, 100);
-        cody.setScale(1.5);
-        cody.play("walk");
-        this.cody = cody;
-
-        const rect = new Phaser.Geom.Rectangle(
-            0,
-            0,
-            this.sys.game.scale.gameSize.width,
-            this.sys.game.scale.gameSize.height,
-        );
-
-        //  Randomly position the sprites within the rectangle
-        //Phaser.Actions.RandomRectangle(group.getChildren(), rect);
+        this.add.particles(0, 100, "drop", {
+            x: { min: 0, max: camera.width },
+            y: { min: 0, max: camera.height },
+            quantity: 2,
+            lifespan: 2500,
+            blendMode: Phaser.BlendModes.MULTIPLY,
+            //gravityY: 200,
+            accelerationX: [-100, 100],
+            accelerationY: [-100, 100],
+            scale: 0.1,
+        });
     }
 
     update() {
-        const { cody, keys, camera, cursors, space, cells } = this;
-
-        const cx = camera.centerX;
-        const cy = camera.centerY;
-
-        let xo = 0;
-        let yo = 0;
-        if (space.isDown) {
-            xo += 10;
-        }
-
-        if (cursors.right.isDown) {
-            xo++;
-        }
-        if (cursors.left.isDown) {
-            xo--;
-        }
-        if (cursors.down.isDown) {
-            yo++;
-        }
-        if (cursors.up.isDown) {
-            yo--;
-        }
+        const { keys, camera, cells } = this;
 
         cells.forEach((c) => {
-            //c.x++;
-            const sp = 0.15;
-            const a = Phaser.Math.Angle.Between(c.x, c.y, cx, cy);
-            c.x += Math.cos(a) * sp;
-            c.y += Math.sin(a) * sp;
-            const d = Phaser.Math.Distance.Between(c.x, c.y, cx, cy);
-            if (d < 20) {
+            c.update();
+            if (!c.target) {
+                // dead.
                 c.visible = false;
             }
-
-            if (c.visible == false) {
-                c.visible = true;
-                const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
-                c.x += Math.cos(a) * camera.width * 0.5;
-                c.y += Math.sin(a) * camera.width * 0.5;
-            }
-
-            c.angle += 1;
         });
 
         this.slots.forEach((m, i) => {
@@ -248,13 +223,5 @@ export class Game extends Scene {
                 }
             }
         });
-
-        if (xo || yo) {
-            cody.x += xo;
-            cody.y += yo;
-            cody.play("walk", true);
-        } else {
-            cody.stop();
-        }
     }
 }
