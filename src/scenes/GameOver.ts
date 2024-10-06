@@ -36,6 +36,8 @@ export class GameOver extends Scene {
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x000000);
 
+        this.sound.add("laugh", { volume: 1 }).play();
+
         this.add.image(512, 300, "gameover");
 
         const font = {
@@ -50,12 +52,12 @@ export class GameOver extends Scene {
 
         const perc = this.whacks_good / (this.whacks_good + this.whacks_missed);
         this.stats = this.add.text(
-            800,
+            750,
             400,
-            `ai bots destroyed: ${Math.round(perc * 100)}%
+            `bots destroyed: ${Math.round(perc * 100)}%
 good guys killed: ${this.whacks_bad}
 cells destroyed: ${this.cells_killed}`,
-            { ...font, fontSize: 18 },
+            { ...font, fontSize: 24 },
         );
 
         this.input.on("pointerdown", () => {

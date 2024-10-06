@@ -8,9 +8,9 @@ const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 const SCORE_BOT_KILL = 100;
 const SCORE_CELL_KILL = 20;
 const HP_BOT_KILL = 0;
-const HP_BOT_MISSED = -5;
-const HP_CELL_ESCAPED = -1;
-const HP_FRIENDLY_FIRE = -5;
+const HP_BOT_MISSED = -10;
+const HP_CELL_ESCAPED = -5;
+const HP_FRIENDLY_FIRE = -13;
 const BOMB_COOLDOWN = 20;
 const BOMB_CHARGE_TIME = 30;
 const BOMB_EXPLOSION_RADIUS = 80;
@@ -80,20 +80,20 @@ export class Game extends Scene {
         this.cells_escaped = 0;
 
         this.cell_spawn_timer = 500; // initial delay
-        this.cell_spawn_rate = 130; // spawn 1 every X ticks to start
-        this.cell_spawn_rate_inc = -1.5; // every spawn, reduce rate
-        this.cell_spawn_rate_fastest = 10; // fastest spawn rate
-        this.cell_spawn_speed_base = 0.05; // base speed of new cells
+        this.cell_spawn_rate = 110; // spawn 1 every X ticks to start
+        this.cell_spawn_rate_inc = -1.8; // every spawn, reduce rate
+        this.cell_spawn_rate_fastest = 30; // fastest spawn rate
+        this.cell_spawn_speed_base = 0.35; // base speed of new cells
         this.cell_spawn_speed_inc = 0.01; // how much faster each subsequent cell gets
 
         this.slot_spawn_chance = 0.08;
-        this.slot_spawn_chance_max = 1;
-        this.slot_spawn_chance_inc = 0.001;
+        this.slot_spawn_chance_max = 10;
+        this.slot_spawn_chance_inc = 0.00005;
 
         this.slot_spawn_life_min = 40;
         this.slot_spawn_life = 100;
         this.slot_spawn_life_deviation = 15; // life +/- deviation
-        this.slot_spawn_life_inc = -0.2; // popup up for less and less time
+        this.slot_spawn_life_inc = -0.01; // popup up for less and less time
 
         this.slot_spawn_ai_chance = 0.6;
 
@@ -119,6 +119,7 @@ export class Game extends Scene {
 
         const theme = this.sound.add("theme", { volume: 1 });
         theme.play();
+        theme.loop = true;
         this.theme = theme;
         this.sfx = {
             laugh: this.sound.add("laugh", { volume: 1 }),
@@ -134,6 +135,15 @@ export class Game extends Scene {
         this.camera.setBackgroundColor(0x000000);
         //// this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
         this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
+
+        const esc = input.keyboard.addKey(KeyCodes.ESC);
+        esc.on("down", (key, event) => {
+            //            this.health = 2;
+            if (confirm("Quit?")) {
+                this.theme.stop();
+                this.scene.start("MainMenu");
+            }
+        });
 
         const cell_size = 180;
         const cell_pad = 0;
@@ -280,8 +290,8 @@ export class Game extends Scene {
     }
 
     draw_score() {
-        this.score_text.text = this.score;
-        this.hp_text.text = this.health;
+        this.score_text.text = this.slot_spawn_chance.toFixed(2); //this.score;
+        this.hp_text.text = this.slot_spawn_life.toFixed(2); //this.health;
     }
 
     update() {
@@ -489,21 +499,17 @@ export class Game extends Scene {
                         this.slot_spawn_life_deviation,
                     ),
             );
-            // Get faster each time
-            this.slot_spawn_life = Math.max(
-                this.slot_spawn_life_min,
-                this.slot_spawn_life + this.slot_spawn_life_inc,
-            );
-
-            this.slot_spawn_chance = Math.min(
-                this.slot_spawn_chance_max,
-                this.slot_spawn_chance + this.slot_spawn_chance_inc,
-            );
-            /*console.log(
-                (this.slot_spawn_chance * 100).toFixed(0),
-                this.slot_spawn_life,
-                this.slot_spawn_life_min,
-            );*/
         }
+
+        // Update every frame
+        this.slot_spawn_chance = Math.min(
+            this.slot_spawn_chance_max,
+            this.slot_spawn_chance + this.slot_spawn_chance_inc,
+        );
+        // Get faster each time
+        this.slot_spawn_life = Math.max(
+            this.slot_spawn_life_min,
+            this.slot_spawn_life + this.slot_spawn_life_inc,
+        );
     }
 }
