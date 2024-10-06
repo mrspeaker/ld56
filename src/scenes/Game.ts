@@ -33,7 +33,13 @@ export class Game extends Scene {
 
     score: number;
     health: number;
-    cooldown: number;
+    cooldown: number; // bomb placement cooldown
+    whacks_good: number;
+    whacks_bad: number;
+    whacks_missed: number;
+
+    cells_killed: number;
+    cells_escaped: number;
 
     constructor() {
         super("Game");
@@ -43,6 +49,11 @@ export class Game extends Scene {
         this.health = 100;
         this.score = 0;
         this.cooldown = 0;
+        this.whacks_good = 0;
+        this.whacks_bad = 0;
+        this.whacks_missed = 0;
+        this.cells_killed = 0;
+        this.cells_escaped = 0;
 
         this.slots = [];
         this.slot_gfx = [];
@@ -194,7 +205,7 @@ export class Game extends Scene {
         ];
         const space = input.keyboard.addKey(KeyCodes.SPACE);
         space.once("down", () => {
-            this.health = 2;
+            //            this.health = 2;
         });
 
         this.add.particles(0, 100, "drop", {
@@ -222,7 +233,12 @@ export class Game extends Scene {
         const { keys, cells, camera, slots, bombs } = this;
 
         cells.forEach((c) => {
-            c.update();
+            if (c.update()) {
+                // Made it to the target
+                this.health -= 1;
+                this.cells_escaped++;
+            }
+
             if (!c.target) {
                 // dead.
                 //c.visible = false;
@@ -230,7 +246,6 @@ export class Game extends Scene {
                 c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
                 c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
                 c.target = this.get_cell_target(c.x, c.y);
-                this.health -= 1;
             }
         });
 
@@ -246,6 +261,8 @@ export class Game extends Scene {
                 cells.forEach((c) => {
                     const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
                     if (d < bomb_radius) {
+                        this.score += 1;
+                        this.cells_killed++;
                         c.target = null;
                     }
                 });
@@ -290,10 +307,12 @@ export class Game extends Scene {
                         // score!
                         this.score += 1;
                         this.health += 2;
+                        this.whacks_good++;
                         this.slot_gfx[i].play("bot1_die");
                     } else {
                         // brrrrp!
                         this.health -= 5;
+                        this.whacks_bad++;
                         this.slot_gfx[i].visible = false;
                     }
                     this.tweens.add({
@@ -305,6 +324,10 @@ export class Game extends Scene {
                 if (m.timer-- <= 0) {
                     m.alive = false;
                     this.slot_gfx[i].visible = false;
+                    if (m.type == 0) {
+                        this.whacks_missed++;
+                        this.health -= 10;
+                    }
                 }
             } else {
                 if (Phaser.Math.Between(0, 200) == 1) {
@@ -323,14 +346,13 @@ export class Game extends Scene {
         });
         if (this.health > 100) this.health = 100;
         if (this.health <= 0) {
-            // TODO: if there's time (LOL), track more stats:
-            // * num missed whacks
-            // * num wrong whacks
-            // * num cells entered
-            // * num cells destroyed
-            // * avg cell-to-bomb ratio?
             this.scene.start("GameOver", {
                 score: this.score,
+                whacks_good: this.whacks_good,
+                whacks_bad: this.whacks_bad,
+                whacks_missed: this.whacks_missed,
+                cells_killed: this.cells_killed,
+                cells_escaped: this.cells_escaped,
             });
         }
     }

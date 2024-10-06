@@ -26,9 +26,10 @@ export class Cell extends Phaser.GameObjects.Sprite {
             //              cell._hmm_fx.outerStrength = 0;
         });
     }
-    update() {
+    // REturns true if cell got to target
+    update(): boolean {
         if (!this.target) {
-            return;
+            return false;
         }
         const { target, speed } = this;
         const a = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
@@ -44,6 +45,8 @@ export class Cell extends Phaser.GameObjects.Sprite {
         );
         if (d < 10) {
             this.target = null;
+            return true;
         }
+        return false;
     }
 }

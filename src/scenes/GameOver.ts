@@ -6,13 +6,30 @@ export class GameOver extends Scene {
     gameover_text: Phaser.GameObjects.Text;
 
     score: number;
+    whacks_good: number;
+    whacks_bad: number;
+    whacks_missed: number;
+    cells_killed: number;
+    cells_escaped: number;
+
+    cooldown: number;
 
     constructor() {
         super("GameOver");
     }
 
     init(data) {
-        this.score = data.score || 0;
+        this.score = data.score;
+        this.whacks_good = data.whacks_good;
+        this.whacks_bad = data.whacks_bad;
+        this.whacks_missed = data.whacks_missed;
+        this.cells_killed = data.cells_killed;
+        this.cells_escaped = data.cells_escaped;
+        this.cooldown = 100;
+    }
+
+    update() {
+        this.cooldown--;
     }
 
     create() {
@@ -21,23 +38,37 @@ export class GameOver extends Scene {
 
         this.add.image(512, 300, "gameover");
 
-        this.gameover_text = this.add.text(512, 384, this.score, {
+        const font = {
             fontFamily: "Arial Black",
             fontSize: 64,
             color: "#ffffff",
-            stroke: "#000000",
-            strokeThickness: 8,
             align: "center",
-        });
+        };
+
+        this.gameover_text = this.add.text(512, 384, this.score, font);
         this.gameover_text.setOrigin(0.5);
 
-        this.input.once("pointerdown", () => {
-            this.scene.start("MainMenu");
+        const perc = this.whacks_good / (this.whacks_good + this.whacks_missed);
+        this.stats = this.add.text(
+            800,
+            400,
+            `ai bots destroyed: ${Math.round(perc * 100)}%
+good guys killed: ${this.whacks_bad}
+cells destroyed: ${this.cells_killed}`,
+            { ...font, fontSize: 18 },
+        );
+
+        this.input.on("pointerdown", () => {
+            if (this.cooldown <= 0) {
+                this.scene.start("MainMenu");
+            }
         });
         this.input.keyboard
             ?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
-            .once("down", () => {
-                this.scene.start("MainMenu");
+            .on("down", () => {
+                if (this.cooldown <= 0) {
+                    this.scene.start("MainMenu");
+                }
             });
     }
 }
