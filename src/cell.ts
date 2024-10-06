@@ -26,14 +26,6 @@ export class Cell extends Phaser.GameObjects.Sprite {
         );
         if (d < 10) {
             this.target = null;
-            //this.visible = false;
         }
-
-        /*if (c.visible == false) {
-            c.visible = true;
-            const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            c.x += Math.cos(a) * camera.width * 0.5;
-            c.y += Math.sin(a) * camera.width * 0.5;
-        }*/
     }
 }
