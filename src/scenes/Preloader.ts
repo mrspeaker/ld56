@@ -20,7 +20,16 @@ export class Preloader extends Scene {
 
         this.load.image("logo", "logo.png");
         this.load.image("gameover", "gameover.png");
+        this.load.image("bad", "bad.png");
+        this.load.image("good", "good.png");
+        this.load.image("keymouse", "keymouse.png");
+        this.load.image("glass", "glass.png");
+
         this.load.spritesheet("hit", "hit.png", {
+            frameWidth: 128,
+            frameHeight: 128,
+        });
+        this.load.spritesheet("meta", "meta.png", {
             frameWidth: 128,
             frameHeight: 128,
         });
@@ -33,8 +42,8 @@ export class Preloader extends Scene {
             frameHeight: 128,
         });
         this.load.spritesheet("drop", "drop.png", {
-            frameWidth: 64,
-            frameHeight: 64,
+            frameWidth: 96,
+            frameHeight: 96,
         });
         this.load.spritesheet("bot1", "bot1.png", {
             frameWidth: 128,
@@ -95,6 +104,12 @@ export class Preloader extends Scene {
             key: "mol",
             frames: this.anims.generateFrameNumbers("mol"),
             frameRate: 3,
+            repeat: -1,
+        });
+        this.anims.create({
+            key: "meta",
+            frames: this.anims.generateFrameNumbers("meta"),
+            frameRate: 30,
             repeat: -1,
         });
         this.scene.start("MainMenu");

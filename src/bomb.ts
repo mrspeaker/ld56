@@ -2,8 +2,7 @@ export class Bomb extends Phaser.GameObjects.Sprite {
     timer: number;
     charge_time: number;
     constructor(scene: Phaser.Scene, charge_time: number) {
-        super(scene, 0, 0, "drop");
-        this.setTintFill(0xee9900);
+        super(scene, 0, 0, "meta");
         this.visible = false;
         this.x = 100;
         this.y = 40;
@@ -15,15 +14,16 @@ export class Bomb extends Phaser.GameObjects.Sprite {
         this.visible = true;
         this.x = x;
         this.y = y;
-        this.scale = 0.2;
-        scene.tweens.add({
+        this.scale = 0.75;
+        this.play("meta");
+        /*scene.tweens.add({
             targets: this,
             scale: 1,
             duration: 300,
             repeat: 0,
             delay: 80,
             ease: "bounce.out",
-        });
+        });*/
     }
     update() {
         if (this.timer > 0) {

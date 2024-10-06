@@ -131,6 +131,14 @@ export class Game extends Scene {
         this.bg.setDisplaySize(camera.width, camera.height);
         this.bg.postFX.addVignette(0.5, 0.5, 0.6);
 
+        this.add.circle(
+            camera.centerX,
+            camera.centerY,
+            Game.RADIUS,
+            0x000000,
+            0.8,
+        );
+
         //const m = add.sprite(camera.centerX, camera.centerY, "mol");
         //m.play("mol");
 
@@ -176,6 +184,7 @@ export class Game extends Scene {
         for (let i = 0; i < Game.MAX_CELLS; i++) {
             const cell = new Cell(this, 0, 0);
             cell.visible = false;
+            cell.setScale(Phaser.Math.FloatBetween(0.5, 0.8));
             this.cells.push(cell);
             cell_group.add(cell, true);
         }
@@ -237,15 +246,20 @@ export class Game extends Scene {
 
         this.add.particles(0, 100, "drop", {
             x: { min: 0, max: camera.width },
-            y: { min: 0, max: camera.height },
-            quantity: 2,
-            lifespan: 2500,
-            blendMode: Phaser.BlendModes.MULTIPLY,
+            y: { min: -100, max: camera.height },
+            quantity: 1,
+            lifespan: 200,
+            tint: 0xffff00,
+            alpha: 0.5,
+            blendMode: Phaser.BlendModes.LIGHTER,
             //gravityY: 200,
             accelerationX: [-100, 100],
             accelerationY: [-100, 100],
             scale: 0.1,
         });
+
+        const glass = this.add.image(camera.centerX, camera.centerY, "glass");
+        glass.setAlpha(0.14);
     }
 
     draw_score() {
@@ -357,6 +371,7 @@ export class Game extends Scene {
             case slot_state.MOVING_IN:
                 if (m.timer-- <= 0) {
                     slot_gfx[m.idx].visible = true;
+                    slot_gfx[m.idx].setAngle(Phaser.Math.FloatBetween(-20, 20));
                     slot_gfx[m.idx].play(["bot1", "blerb", "blerb2"][m.type]);
                     m.state = slot_state.ALIVE;
                     m.timer = m.life;

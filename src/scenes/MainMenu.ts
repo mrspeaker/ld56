@@ -12,10 +12,20 @@ export class MainMenu extends Scene {
     create() {
         //        this.background = this.add.image(512, 384, "background");
 
-        this.logo = this.add.image(512, 300, "logo");
+        this.logo = this.add.image(512, 250, "logo");
+
+        this.add.image(100, 180, "bad");
+        this.add.sprite(70, 280, "bot1").play("bot1");
+        this.add.sprite(180, 270, "drop").play("drop");
+
+        this.add.image(880, 340, "good");
+        this.add.sprite(800, 480, "blerb").play("blerb");
+        this.add.sprite(920, 430, "blerb2").play("blerb2");
+
+        this.add.image(520, 620, "keymouse");
 
         /*this.title = this.add
-            .text(612, 460, "Main Menu", {
+            .text(402, 740, "Keys: whack creatures. Mouse: explode cells", {
                 fontFamily: "Arial Black",
                 fontSize: 28,
                 color: "#ffffff",

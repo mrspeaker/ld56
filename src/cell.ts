@@ -6,7 +6,7 @@ export class Cell extends Phaser.GameObjects.Sprite {
         //this.setInteractive();
         this.speed = Phaser.Math.FloatBetween(0.13, 0.25);
         this.angle = Phaser.Math.Angle.RandomDegrees();
-        this.setScale(0.65);
+        this.setScale(Phaser.Math.FloatBetween(0.4, 0.7));
         this.playAfterDelay("drop", Phaser.Math.Between(0, 1500));
     }
     add_handlers() {
