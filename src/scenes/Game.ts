@@ -242,7 +242,7 @@ export class Game extends Scene {
                 cell_size / 2 +
                 gap_y;
 
-            const txt = this.add.text(x - 50, y - 50, "QWEASD".split("")[i], {
+            const txt = this.add.text(x - 50, y - 50, "QWEDSA".split("")[i], {
                 fontFamily: "Arial Black",
                 fontSize: 18,
                 color: "#ffffff",
