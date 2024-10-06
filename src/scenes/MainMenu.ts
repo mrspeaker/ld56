@@ -11,6 +11,7 @@ export class MainMenu extends Scene {
 
     create() {
         //        this.background = this.add.image(512, 384, "background");
+        this.input.setDefaultCursor("url(assets/syr.png), pointer");
 
         this.logo = this.add.image(512, 250, "logo");
 

@@ -184,7 +184,7 @@ export class Game extends Scene {
         for (let i = 0; i < Game.MAX_CELLS; i++) {
             const cell = new Cell(this, 0, 0);
             cell.visible = false;
-            cell.setScale(Phaser.Math.FloatBetween(0.5, 0.8));
+            cell.setScale(Phaser.Math.FloatBetween(0.3, 0.8));
             this.cells.push(cell);
             cell_group.add(cell, true);
         }
