@@ -10,6 +10,11 @@ class Slot {
     timer: number = 0;
 }
 
+const SCORE_BOT_KILL = 100;
+const SCORE_CELL_KILL = 20;
+const HP_BOT_KILL = 2;
+const HP_FRIENDLY_FIRE = -5;
+
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
     bg: Phaser.GameObjects.Image;
@@ -17,7 +22,7 @@ export class Game extends Scene {
 
     keys: Phaser.Input.Keyboard.Key[];
 
-    static MAX_CELLS = 30;
+    static MAX_CELLS = 50;
     static MAX_BOMBS = 30;
     static RADIUS = 220;
 
@@ -41,6 +46,13 @@ export class Game extends Scene {
     cells_killed: number;
     cells_escaped: number;
 
+    cell_spawn_timer: number;
+    cell_spawn_rate: number;
+    cell_spawn_rate_inc: number;
+    cell_spawn_rate_fastest: number;
+    cell_spawn_speed_base: number;
+    cell_spawn_speed_inc: number;
+
     constructor() {
         super("Game");
     }
@@ -54,6 +66,13 @@ export class Game extends Scene {
         this.whacks_missed = 0;
         this.cells_killed = 0;
         this.cells_escaped = 0;
+
+        this.cell_spawn_timer = 500; // initial delay
+        this.cell_spawn_rate = 200; // spawn 1 every X ticks to start
+        this.cell_spawn_rate_inc = -10; // every spawn, reduce rate
+        this.cell_spawn_rate_fastest = 30; // fastest spawn rate
+        this.cell_spawn_speed_base = 0.1; // base speed of new cells
+        this.cell_spawn_speed_inc = -0.01; // how much faster each subsequent cell gets
 
         this.slots = [];
         this.slot_gfx = [];
@@ -100,7 +119,7 @@ export class Game extends Scene {
             0x7dff7d,
             0.1,
         );
-        const bits = 10;
+        /*        const bits = 10;
         for (let i = 0; i < bits; i++) {
             const graphics = this.add.graphics();
             graphics.lineStyle(4, 0x7dff7d, 1);
@@ -115,7 +134,7 @@ export class Game extends Scene {
                 true,
             );
             graphics.strokePath();
-        }
+        }*/
 
         const score = add.text(512, 384, "LD56", {
             fontFamily: "Arial Black",
@@ -138,12 +157,9 @@ export class Game extends Scene {
         const cell_group = this.add.group();
         for (let i = 0; i < Game.MAX_CELLS; i++) {
             const cell = new Cell(this, 0, 0);
+            cell.visible = false;
             this.cells.push(cell);
             cell_group.add(cell, true);
-            const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            cell.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
-            cell.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
-            cell.target = this.get_cell_target(cell.x, cell.y);
         }
 
         this.bomb_group = this.add.group();
@@ -237,17 +253,30 @@ export class Game extends Scene {
                 // Made it to the target
                 this.health -= 1;
                 this.cells_escaped++;
+                c.visible = false;
             }
+        });
 
-            if (!c.target) {
-                // dead.
-                //c.visible = false;
+        if (this.cell_spawn_timer-- <= 0) {
+            // spawn a cell
+            const c = cells.find((c) => c.target == null);
+            if (c) {
+                c.visible = true;
                 const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
                 c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
                 c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
                 c.target = this.get_cell_target(c.x, c.y);
+                // Get faster each new cell
+                c.speed = this.cell_spawn_speed_base;
+                this.cell_spawn_speed_base += this.cell_spawn_speed_inc;
             }
-        });
+            // Spawn faster each new cell
+            this.cell_spawn_timer = this.cell_spawn_rate;
+            this.cell_spawn_rate = Math.max(
+                this.cell_spawn_rate_fastest,
+                this.cell_spawn_rate + this.cell_spawn_rate_inc,
+            );
+        }
 
         bombs.forEach((b) => {
             if (!b.update()) {
@@ -261,9 +290,10 @@ export class Game extends Scene {
                 cells.forEach((c) => {
                     const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
                     if (d < bomb_radius) {
-                        this.score += 1;
+                        this.score += SCORE_CELL_KILL;
                         this.cells_killed++;
                         c.target = null;
+                        c.visible = false;
                     }
                 });
             }
@@ -305,13 +335,13 @@ export class Game extends Scene {
 
                     if (m.type == 0) {
                         // score!
-                        this.score += 1;
-                        this.health += 2;
+                        this.score += SCORE_BOT_KILL;
+                        this.health += HP_BOT_KILL;
                         this.whacks_good++;
                         this.slot_gfx[i].play("bot1_die");
                     } else {
                         // brrrrp!
-                        this.health -= 5;
+                        this.health += HP_FRIENDLY_FIRE;
                         this.whacks_bad++;
                         this.slot_gfx[i].visible = false;
                     }
