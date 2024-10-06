@@ -5,18 +5,23 @@ export class GameOver extends Scene {
     background: Phaser.GameObjects.Image;
     gameover_text: Phaser.GameObjects.Text;
 
+    score: number;
+
     constructor() {
         super("GameOver");
     }
 
+    init(data) {
+        this.score = data.score || 0;
+    }
+
     create() {
         this.camera = this.cameras.main;
-        this.camera.setBackgroundColor(0xff0000);
+        this.camera.setBackgroundColor(0x000000);
 
-        this.background = this.add.image(512, 384, "background");
-        this.background.setAlpha(0.5);
+        this.add.image(512, 300, "gameover");
 
-        this.gameover_text = this.add.text(512, 384, "Game Over", {
+        this.gameover_text = this.add.text(512, 384, this.score, {
             fontFamily: "Arial Black",
             fontSize: 64,
             color: "#ffffff",
@@ -29,5 +34,10 @@ export class GameOver extends Scene {
         this.input.once("pointerdown", () => {
             this.scene.start("MainMenu");
         });
+        this.input.keyboard
+            ?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+            .once("down", () => {
+                this.scene.start("MainMenu");
+            });
     }
 }

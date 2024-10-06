@@ -19,9 +19,10 @@ export class Preloader extends Scene {
         this.load.setPath("assets");
 
         this.load.image("logo", "logo.png");
-        this.load.spritesheet("walk", "sheet.png", {
-            frameWidth: 64 * 1,
-            frameHeight: 64 * 1,
+        this.load.image("gameover", "gameover.png");
+        this.load.spritesheet("hit", "hit.png", {
+            frameWidth: 128,
+            frameHeight: 128,
         });
         this.load.spritesheet("blerb", "blerb.png", {
             frameWidth: 128,
@@ -47,12 +48,10 @@ export class Preloader extends Scene {
 
     create() {
         this.anims.create({
-            key: "walk",
-            frames: this.anims.generateFrameNumbers("walk", {
-                frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            }),
-            frameRate: 10,
-            repeat: -1,
+            key: "hit",
+            frames: this.anims.generateFrameNumbers("hit"),
+            frameRate: 30,
+            repeat: 0,
         });
 
         this.anims.create({

@@ -1,5 +1,6 @@
 import { Scene } from "phaser";
 import { Cell } from "../cell.ts";
+import { Bomb } from "../bomb.ts";
 
 const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
@@ -16,22 +17,37 @@ export class Game extends Scene {
 
     keys: Phaser.Input.Keyboard.Key[];
 
-    slots: Slot[] = [];
-    slot_gfx: Phaser.GameObjects.GameObject[] = [];
-
     static MAX_CELLS = 30;
-    cells: Cell[] = [];
+    static MAX_BOMBS = 30;
+    static RADIUS = 220;
 
-    cell_layer: Phaser.GameObjects.Group;
+    slots: Slot[];
+    slot_gfx: Phaser.GameObjects.GameObject[];
+    cells: Cell[];
+    bombs: Bomb[];
+    bomb_group: Phaser.GameObjects.Group;
 
     NUM_COLS = 3;
     NUM_ROWS = 2;
     NUM_MOLES = 6;
 
-    score = 0;
+    score: number;
+    health: number;
+    cooldown: number;
 
     constructor() {
         super("Game");
+    }
+
+    init() {
+        this.health = 100;
+        this.score = 0;
+        this.cooldown = 0;
+
+        this.slots = [];
+        this.slot_gfx = [];
+        this.cells = [];
+        this.bombs = [];
     }
 
     get_cell_target(src_x: number, src_y: number) {
@@ -66,11 +82,17 @@ export class Game extends Scene {
         //const m = add.sprite(camera.centerX, camera.centerY, "mol");
         //m.play("mol");
 
-        this.add.circle(camera.centerX, camera.centerY, 220, 0x33ff00, 0.1);
+        this.add.circle(
+            camera.centerX,
+            camera.centerY,
+            Game.RADIUS,
+            0x7dff7d,
+            0.1,
+        );
         const bits = 10;
         for (let i = 0; i < bits; i++) {
             const graphics = this.add.graphics();
-            graphics.lineStyle(4, 0x33ff00, 1);
+            graphics.lineStyle(4, 0x7dff7d, 1);
             graphics.beginPath();
             const start = (i / bits) * (Math.PI * 2);
             graphics.arc(
@@ -111,23 +133,13 @@ export class Game extends Scene {
             cell.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
             cell.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
             cell.target = this.get_cell_target(cell.x, cell.y);
-            // NO! Killls perf
-            // cell._hmm_fx = cell.postFX.addGlow(0xefefef, 0, 0, false, 0.1, 24);
+        }
 
-            cell.playAfterDelay("drop", Phaser.Math.Between(0, 1500));
-            cell.on("pointerdown", () => {
-                //cell.visible = false;
-                cell.target = null;
-                //   cell._hmm_fx.outerStrength = 0;
-            });
-            cell.on("pointerover", () => {
-                cell.setTint(0x00ff00);
-                //                cell._hmm_fx.outerStrength = 4;
-            });
-            cell.on("pointerout", () => {
-                cell.setTint(0xffffff);
-                //              cell._hmm_fx.outerStrength = 0;
-            });
+        this.bomb_group = this.add.group();
+        for (let i = 0; i < Game.MAX_BOMBS; i++) {
+            const b = new Bomb(this);
+            this.bombs.push(b);
+            this.bomb_group.add(b, true);
         }
 
         const cell_bg = this.add.group();
@@ -180,6 +192,10 @@ export class Game extends Scene {
             input.keyboard.addKey(KeyCodes.S),
             input.keyboard.addKey(KeyCodes.A),
         ];
+        const space = input.keyboard.addKey(KeyCodes.SPACE);
+        space.once("down", () => {
+            this.health = 2;
+        });
 
         this.add.particles(0, 100, "drop", {
             x: { min: 0, max: camera.width },
@@ -194,8 +210,16 @@ export class Game extends Scene {
         });
     }
 
+    draw_score() {
+        this.score_text.text =
+            "SCORE: " +
+            (this.score + "").padStart(5, "0") +
+            " HP: " +
+            this.health;
+    }
+
     update() {
-        const { keys, cells, camera, slots, slot_bg } = this;
+        const { keys, cells, camera, slots, bombs } = this;
 
         cells.forEach((c) => {
             c.update();
@@ -206,29 +230,76 @@ export class Game extends Scene {
                 c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
                 c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
                 c.target = this.get_cell_target(c.x, c.y);
+                this.health -= 1;
             }
         });
+
+        bombs.forEach((b) => {
+            if (!b.update()) {
+                // exlodey
+                const e = this.add.sprite(b.x, b.y, "hit").play("hit");
+                e.once("animationcomplete", () => {
+                    e.destroy();
+                });
+                // Find nearby cells and destroy them.
+                const bomb_radius = 50;
+                cells.forEach((c) => {
+                    const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
+                    if (d < bomb_radius) {
+                        c.target = null;
+                    }
+                });
+            }
+        });
+
+        const pointer = this.input.activePointer;
+        this.cooldown--; // = Math.max(0, this.cooldown--);
+        if (pointer.isDown && this.cooldown <= 0) {
+            const dist = Phaser.Math.Distance.Between(
+                camera.centerX,
+                camera.centerY,
+                pointer.position.x,
+                pointer.position.y,
+            );
+            if (dist >= Game.RADIUS) {
+                // Drop a bomba!
+                this.cooldown = 30;
+                const b = this.bombs.find((b) => b.explode());
+                if (b) {
+                    b.ignite(pointer.position.x, pointer.position.y, this);
+                }
+            }
+        }
+
+        this.draw_score();
 
         slots.forEach((m, i) => {
             if (m.alive) {
                 if (keys[i].isDown) {
                     m.alive = false;
 
+                    const hit_gfx = this.add
+                        .sprite(this.slot_gfx[i].x, this.slot_gfx[i].y, "hit")
+                        .play("hit", false)
+                        .once("animationcomplete", () => {
+                            hit_gfx.destroy();
+                        });
+                    camera.shake(100, 0.01);
+
                     if (m.type == 0) {
                         // score!
                         this.score += 1;
+                        this.health += 2;
                         this.slot_gfx[i].play("bot1_die");
                     } else {
                         // brrrrp!
-                        camera.shake(100, 0.02);
-                        this.score -= 20;
+                        this.health -= 5;
                         this.slot_gfx[i].visible = false;
                     }
                     this.tweens.add({
                         targets: this.slot_bg[i],
                         alpha: 0,
                     });
-                    this.score_text.text = this.score;
                 }
 
                 if (m.timer-- <= 0) {
@@ -250,5 +321,17 @@ export class Game extends Scene {
                 }
             }
         });
+        if (this.health > 100) this.health = 100;
+        if (this.health <= 0) {
+            // TODO: if there's time (LOL), track more stats:
+            // * num missed whacks
+            // * num wrong whacks
+            // * num cells entered
+            // * num cells destroyed
+            // * avg cell-to-bomb ratio?
+            this.scene.start("GameOver", {
+                score: this.score,
+            });
+        }
     }
 }
