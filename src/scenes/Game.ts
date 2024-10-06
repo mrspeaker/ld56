@@ -1,19 +1,18 @@
 import { Scene } from "phaser";
 import { Cell } from "../cell.ts";
 import { Bomb } from "../bomb.ts";
+import { Slot, slot_state, slot_type } from "../slot.ts";
 
 const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
-class Slot {
-    type: number;
-    alive: boolean = false;
-    timer: number = 0;
-}
-
 const SCORE_BOT_KILL = 100;
 const SCORE_CELL_KILL = 20;
-const HP_BOT_KILL = 2;
+const HP_BOT_KILL = 0;
+const HP_BOT_MISSED = -5;
 const HP_FRIENDLY_FIRE = -5;
+const BOMB_COOLDOWN = 20;
+const BOMB_CHARGE_TIME = 30;
+const BOMB_EXPLOSION_RADIUS = 80;
 
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
@@ -38,7 +37,9 @@ export class Game extends Scene {
 
     score: number;
     health: number;
-    cooldown: number; // bomb placement cooldown
+
+    bomb_cooldown: number; // bomb placement cooldown
+
     whacks_good: number;
     whacks_bad: number;
     whacks_missed: number;
@@ -53,6 +54,16 @@ export class Game extends Scene {
     cell_spawn_speed_base: number;
     cell_spawn_speed_inc: number;
 
+    slot_spawn_chance: number;
+    slot_spawn_chance_max: number;
+    slot_spawn_chance_inc: number;
+
+    slot_spawn_ai_chance: number; // between 0-1
+    slot_spawn_life: number;
+    slot_spawn_life_min: number; // minum time on screen at fastest
+    slot_spawn_life_deviation: number; // life +/- deviation
+    slot_spawn_life_inc: number; // popup up for less and less time
+
     constructor() {
         super("Game");
     }
@@ -60,7 +71,7 @@ export class Game extends Scene {
     init() {
         this.health = 100;
         this.score = 0;
-        this.cooldown = 0;
+        this.bomb_cooldown = 0;
         this.whacks_good = 0;
         this.whacks_bad = 0;
         this.whacks_missed = 0;
@@ -68,11 +79,22 @@ export class Game extends Scene {
         this.cells_escaped = 0;
 
         this.cell_spawn_timer = 500; // initial delay
-        this.cell_spawn_rate = 200; // spawn 1 every X ticks to start
-        this.cell_spawn_rate_inc = -10; // every spawn, reduce rate
-        this.cell_spawn_rate_fastest = 30; // fastest spawn rate
-        this.cell_spawn_speed_base = 0.1; // base speed of new cells
-        this.cell_spawn_speed_inc = -0.01; // how much faster each subsequent cell gets
+        this.cell_spawn_rate = 150; // spawn 1 every X ticks to start
+        this.cell_spawn_rate_inc = -2; // every spawn, reduce rate
+        this.cell_spawn_rate_fastest = 5; // fastest spawn rate
+        this.cell_spawn_speed_base = 0.05; // base speed of new cells
+        this.cell_spawn_speed_inc = 0.01; // how much faster each subsequent cell gets
+
+        this.slot_spawn_chance = 0.08;
+        this.slot_spawn_chance_max = 1;
+        this.slot_spawn_chance_inc = 0.001;
+
+        this.slot_spawn_life_min = 40;
+        this.slot_spawn_life = 100;
+        this.slot_spawn_life_deviation = 15; // life +/- deviation
+        this.slot_spawn_life_inc = -0.2; // popup up for less and less time
+
+        this.slot_spawn_ai_chance = 0.6;
 
         this.slots = [];
         this.slot_gfx = [];
@@ -148,10 +170,6 @@ export class Game extends Scene {
         score.y = 20;
         this.score_text = score;
 
-        /*input.once("pointerdown", () => {
-            //this.scene.start("GameOver");
-            });*/
-
         if (!input.keyboard) return;
 
         const cell_group = this.add.group();
@@ -164,7 +182,7 @@ export class Game extends Scene {
 
         this.bomb_group = this.add.group();
         for (let i = 0; i < Game.MAX_BOMBS; i++) {
-            const b = new Bomb(this);
+            const b = new Bomb(this, BOMB_CHARGE_TIME);
             this.bombs.push(b);
             this.bomb_group.add(b, true);
         }
@@ -188,25 +206,20 @@ export class Game extends Scene {
                 cell_size / 2 +
                 gap_y;
 
-            cell_bg.add(
-                this.add.rectangle(x, y, cell_size, cell_size, 0x333333),
-                true,
-            );
-
             const txt = this.add.text(x - 50, y - 50, "QWEASD".split("")[i], {
                 fontFamily: "Arial Black",
                 fontSize: 18,
                 color: "#ffffff",
             });
-            this.slots.push(new Slot());
+            this.slots.push(new Slot(i));
             const off =
                 (i / this.NUM_MOLES) * Math.PI * 2 - Phaser.Math.DegToRad(145);
             const rad = 160;
             this.slot_gfx[i].x = camera.centerX + Math.cos(off) * rad;
             this.slot_gfx[i].y = camera.centerY + Math.sin(off) * rad;
             this.slot_gfx[i].visible = false;
-            txt.x = camera.centerX + Math.cos(off) * 240 - 5;
-            txt.y = camera.centerY + Math.sin(off) * 240 - 5;
+            txt.x = camera.centerX + Math.cos(off - 0.1) * 240;
+            txt.y = camera.centerY + Math.sin(off - 0.1) * 240;
         }
 
         this.keys = [
@@ -284,10 +297,9 @@ export class Game extends Scene {
                     e.destroy();
                 });
                 // Find nearby cells and destroy them.
-                const bomb_radius = 50;
                 cells.forEach((c) => {
                     const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
-                    if (d < bomb_radius) {
+                    if (d < BOMB_EXPLOSION_RADIUS) {
                         this.score += SCORE_CELL_KILL;
                         this.cells_killed++;
                         c.target = null;
@@ -298,8 +310,8 @@ export class Game extends Scene {
         });
 
         const pointer = this.input.activePointer;
-        this.cooldown--; // = Math.max(0, this.cooldown--);
-        if (pointer.isDown && this.cooldown <= 0) {
+        this.bomb_cooldown--; // = Math.max(0, this.cooldown--);
+        if (pointer.isDown && this.bomb_cooldown <= 0) {
             const dist = Phaser.Math.Distance.Between(
                 camera.centerX,
                 camera.centerY,
@@ -308,7 +320,7 @@ export class Game extends Scene {
             );
             if (dist >= Game.RADIUS) {
                 // Drop a bomba!
-                this.cooldown = 30;
+                this.bomb_cooldown = BOMB_COOLDOWN;
                 const b = this.bombs.find((b) => b.explode());
                 if (b) {
                     b.ignite(pointer.position.x, pointer.position.y, this);
@@ -318,56 +330,13 @@ export class Game extends Scene {
 
         this.draw_score();
 
-        slots.forEach((m, i) => {
-            if (m.alive) {
-                if (keys[i].isDown) {
-                    m.alive = false;
+        // Update slots
+        slots.forEach((m, i) => this.handle_slot(m, i));
 
-                    const hit_gfx = this.add
-                        .sprite(this.slot_gfx[i].x, this.slot_gfx[i].y, "hit")
-                        .play("hit", false)
-                        .once("animationcomplete", () => {
-                            hit_gfx.destroy();
-                        });
-                    camera.shake(100, 0.01);
+        // Spawn any new slots
+        this.spawn_slots();
 
-                    if (m.type == 0) {
-                        // score!
-                        this.score += SCORE_BOT_KILL;
-                        this.health += HP_BOT_KILL;
-                        this.whacks_good++;
-                        this.slot_gfx[i].play("bot1_die");
-                    } else {
-                        // brrrrp!
-                        this.health += HP_FRIENDLY_FIRE;
-                        this.whacks_bad++;
-                        this.slot_gfx[i].visible = false;
-                    }
-                }
-
-                if (m.timer-- <= 0) {
-                    m.alive = false;
-                    this.slot_gfx[i].visible = false;
-                    if (m.type == 0) {
-                        this.whacks_missed++;
-                        this.health -= 10;
-                    }
-                }
-            } else {
-                if (Phaser.Math.Between(0, 200) == 1) {
-                    m.alive = true;
-                    m.timer = 150;
-                    m.type =
-                        Phaser.Math.Between(0, 100) < 65
-                            ? 0
-                            : Phaser.Math.Between(0, 100) < 50
-                            ? 1
-                            : 2;
-                    this.slot_gfx[i].visible = true;
-                    this.slot_gfx[i].play(["bot1", "blerb", "blerb2"][m.type]);
-                }
-            }
-        });
+        // HP
         if (this.health > 100) this.health = 100;
         if (this.health <= 0) {
             this.scene.start("GameOver", {
@@ -378,6 +347,121 @@ export class Game extends Scene {
                 cells_killed: this.cells_killed,
                 cells_escaped: this.cells_escaped,
             });
+        }
+    }
+
+    handle_slot(m: Slot, i: number) {
+        const { keys, slot_gfx } = this;
+
+        switch (m.state) {
+            case slot_state.MOVING_IN:
+                if (m.timer-- <= 0) {
+                    slot_gfx[m.idx].visible = true;
+                    slot_gfx[m.idx].play(["bot1", "blerb", "blerb2"][m.type]);
+                    m.state = slot_state.ALIVE;
+                    m.timer = m.life;
+                }
+                break;
+            case slot_state.ALIVE:
+                if (keys[i].isDown) {
+                    this.handle_whack(m, i);
+                }
+
+                // Handle timer
+                if (m.timer-- <= 0) {
+                    m.state = slot_state.MISSED;
+                    if (m.is_baddie()) {
+                        this.whacks_missed++;
+                        this.health += HP_BOT_MISSED;
+                    }
+                }
+                break;
+            case slot_state.WHACKED:
+                m.state = slot_state.MOVING_OUT;
+                m.timer = 25;
+                break;
+            case slot_state.MISSED:
+                slot_gfx[m.idx].flipY = true;
+                m.state = slot_state.MOVING_OUT;
+                m.timer = 25;
+                break;
+            case slot_state.MOVING_OUT:
+                if (m.timer-- <= 0) {
+                    m.state = slot_state.EMPTY;
+                    slot_gfx[m.idx].visible = false;
+                    slot_gfx[m.idx].flipY = false;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    handle_whack(m: Slot, i: number) {
+        const { camera } = this;
+
+        m.state = slot_state.WHACKED;
+
+        const hit_gfx = this.add
+            .sprite(this.slot_gfx[i].x, this.slot_gfx[i].y, "hit")
+            .play("hit", false)
+            .once("animationcomplete", () => {
+                hit_gfx.destroy();
+            });
+        camera.shake(100, 0.01);
+
+        if (m.is_baddie()) {
+            // score!
+            this.score += SCORE_BOT_KILL;
+            this.health += HP_BOT_KILL;
+            this.whacks_good++;
+            this.slot_gfx[i].play("bot1_die");
+        } else {
+            // brrrrp!
+            this.health += HP_FRIENDLY_FIRE;
+            this.whacks_bad++;
+            this.slot_gfx[i].visible = false;
+        }
+    }
+
+    spawn_slots() {
+        const { slots } = this;
+        if (Phaser.Math.Between(0, 1000) < this.slot_spawn_chance * 100) {
+            const free_slots = slots.filter((s) => s.state == slot_state.EMPTY);
+            if (free_slots.length == 0) return;
+            const m = Phaser.Utils.Array.GetRandom(free_slots);
+            m.state = slot_state.MOVING_IN;
+            m.timer = 30;
+            m.type =
+                Phaser.Math.Between(0, 100) < this.slot_spawn_ai_chance * 100
+                    ? slot_type.AI_BOT
+                    : Phaser.Math.Between(0, 100) < 50
+                    ? slot_type.BLOB1
+                    : slot_type.BLOB2;
+            // How long to show?
+            m.life = Math.max(
+                this.slot_spawn_life_min,
+                this.slot_spawn_life +
+                    Phaser.Math.Between(
+                        -this.slot_spawn_life_deviation,
+                        this.slot_spawn_life_deviation,
+                    ),
+            );
+            // Get faster each time
+            this.slot_spawn_life = Math.max(
+                this.slot_spawn_life_min,
+                this.slot_spawn_life + this.slot_spawn_life_inc,
+            );
+
+            this.slot_spawn_chance = Math.min(
+                this.slot_spawn_chance_max,
+                this.slot_spawn_chance + this.slot_spawn_chance_inc,
+            );
+            /*console.log(
+                (this.slot_spawn_chance * 100).toFixed(0),
+                this.slot_spawn_life,
+                this.slot_spawn_life_min,
+            );*/
         }
     }
 }
