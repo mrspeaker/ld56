@@ -46,6 +46,8 @@ export class Game extends Scene {
     create() {
         const { add, input } = this;
 
+        input.setDefaultCursor("url(assets/syr.png), pointer");
+
         const camera = (this.camera = this.cameras.main);
         this.camera.setBackgroundColor(0x000000);
         // this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
