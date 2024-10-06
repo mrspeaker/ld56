@@ -118,8 +118,8 @@ export class Game extends Scene {
 
         const camera = (this.camera = this.cameras.main);
         this.camera.setBackgroundColor(0x000000);
-        // this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
-        //this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
+        //// this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
+        this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
 
         const cell_size = 180;
         const cell_pad = 0;
@@ -362,6 +362,8 @@ export class Game extends Scene {
                 cells_escaped: this.cells_escaped,
             });
         }
+        camera.backgroundColor.red =
+            this.health > 50 ? 0 : ((50 - this.health) / 50) * 40;
     }
 
     handle_slot(m: Slot, i: number) {
@@ -436,6 +438,7 @@ export class Game extends Scene {
             this.health += HP_FRIENDLY_FIRE;
             this.whacks_bad++;
             this.slot_gfx[i].visible = false;
+            camera.flash(100, 255, 0, 0);
         }
     }
 

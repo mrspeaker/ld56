@@ -23,7 +23,7 @@ export class MainMenu extends Scene {
         this.add.sprite(800, 480, "blerb").play("blerb");
         this.add.sprite(920, 430, "blerb2").play("blerb2");
 
-        this.add.image(520, 620, "keymouse");
+        this.add.image(120, 620, "keymouse");
 
         /*this.title = this.add
             .text(402, 740, "Keys: whack creatures. Mouse: explode cells", {
