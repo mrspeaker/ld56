@@ -32,6 +32,8 @@ export class Preloader extends Scene {
         this.load.audio("punch", "sfx/punch.mp3");
         this.load.audio("splode", "sfx/rev-bleb.mp3");
         this.load.audio("yell", "sfx/yell-get.mp3");
+        this.load.audio("exp", "sfx/exp.mp3");
+        this.load.audio("exp2", "sfx/exp2.mp3");
 
         this.load.spritesheet("hit", "hit.png", {
             frameWidth: 128,

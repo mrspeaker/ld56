@@ -15,6 +15,7 @@ const config: Types.Core.GameConfig = {
     parent: "game-container",
     backgroundColor: "#000",
     pixelArt: false,
+    fps: { limit: 60 }, // haha... oh, just realised tick tied to refresh. Oops
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,

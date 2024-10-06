@@ -9,9 +9,10 @@ const SCORE_BOT_KILL = 100;
 const SCORE_CELL_KILL = 20;
 const HP_BOT_KILL = 0;
 const HP_BOT_MISSED = -5;
+const HP_CELL_ESCAPED = -1;
 const HP_FRIENDLY_FIRE = -5;
 const BOMB_COOLDOWN = 20;
-const BOMB_CHARGE_TIME = 60;
+const BOMB_CHARGE_TIME = 30;
 const BOMB_EXPLOSION_RADIUS = 80;
 
 export class Game extends Scene {
@@ -79,9 +80,9 @@ export class Game extends Scene {
         this.cells_escaped = 0;
 
         this.cell_spawn_timer = 500; // initial delay
-        this.cell_spawn_rate = 150; // spawn 1 every X ticks to start
-        this.cell_spawn_rate_inc = -2; // every spawn, reduce rate
-        this.cell_spawn_rate_fastest = 5; // fastest spawn rate
+        this.cell_spawn_rate = 130; // spawn 1 every X ticks to start
+        this.cell_spawn_rate_inc = -1.5; // every spawn, reduce rate
+        this.cell_spawn_rate_fastest = 10; // fastest spawn rate
         this.cell_spawn_speed_base = 0.05; // base speed of new cells
         this.cell_spawn_speed_inc = 0.01; // how much faster each subsequent cell gets
 
@@ -125,6 +126,8 @@ export class Game extends Scene {
             punch: this.sound.add("punch", { volume: 1 }),
             splode: this.sound.add("splode", { volume: 1 }),
             yell: this.sound.add("yell", { volume: 1 }),
+            exp: this.sound.add("exp", { volume: 1 }),
+            exp2: this.sound.add("exp2", { volume: 1 }),
         };
 
         const camera = (this.camera = this.cameras.main);
@@ -287,7 +290,8 @@ export class Game extends Scene {
         cells.forEach((c) => {
             if (c.update()) {
                 // Made it to the target
-                this.health -= 1;
+                this.health += HP_CELL_ESCAPED;
+                this.sfx.exp.play();
                 this.cells_escaped++;
                 c.visible = false;
             }
@@ -326,6 +330,7 @@ export class Game extends Scene {
                     const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
                     if (d < BOMB_EXPLOSION_RADIUS) {
                         this.score += SCORE_CELL_KILL;
+                        this.sfx.exp2.play();
                         this.cells_killed++;
                         c.target = null;
                         c.visible = false;
