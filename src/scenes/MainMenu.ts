@@ -13,15 +13,17 @@ export class MainMenu extends Scene {
         //        this.background = this.add.image(512, 384, "background");
         this.input.setDefaultCursor("url(assets/syr.png), pointer");
 
-        this.logo = this.add.image(512, 250, "logo");
-
         this.add.image(100, 180, "bad");
         this.add.sprite(70, 280, "bot1").play("bot1");
         this.add.sprite(180, 270, "drop").play("drop");
 
-        this.add.image(880, 340, "good");
-        this.add.sprite(800, 480, "blerb").play("blerb");
-        this.add.sprite(920, 430, "blerb2").play("blerb2");
+        this.add.image(950, 420, "good");
+        this.add.sprite(860, 560, "blerb").play("blerb");
+        this.add.sprite(980, 530, "blerb2").play("blerb2");
+
+        const g = this.add.image(500, 400, "glass");
+        this.add.image(512, 400, "logo");
+        g.setAlpha(0.2);
 
         this.add.image(120, 620, "keymouse");
 

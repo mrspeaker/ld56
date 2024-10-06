@@ -11,7 +11,7 @@ const HP_BOT_KILL = 0;
 const HP_BOT_MISSED = -5;
 const HP_FRIENDLY_FIRE = -5;
 const BOMB_COOLDOWN = 20;
-const BOMB_CHARGE_TIME = 30;
+const BOMB_CHARGE_TIME = 60;
 const BOMB_EXPLOSION_RADIUS = 80;
 
 export class Game extends Scene {
@@ -115,6 +115,17 @@ export class Game extends Scene {
         const { add, input } = this;
 
         input.setDefaultCursor("url(assets/syr.png), pointer");
+
+        const theme = this.sound.add("theme", { volume: 1 });
+        theme.play();
+        this.theme = theme;
+        this.sfx = {
+            laugh: this.sound.add("laugh", { volume: 1 }),
+            ohno: this.sound.add("ohno", { volume: 1 }),
+            punch: this.sound.add("punch", { volume: 1 }),
+            splode: this.sound.add("splode", { volume: 1 }),
+            yell: this.sound.add("yell", { volume: 1 }),
+        };
 
         const camera = (this.camera = this.cameras.main);
         this.camera.setBackgroundColor(0x000000);
@@ -335,6 +346,7 @@ export class Game extends Scene {
             if (dist >= Game.RADIUS) {
                 // Drop a bomba!
                 this.bomb_cooldown = BOMB_COOLDOWN;
+                this.sfx.splode.play();
                 const b = this.bombs.find((b) => b.explode());
                 if (b) {
                     b.ignite(pointer.position.x, pointer.position.y, this);
@@ -353,6 +365,7 @@ export class Game extends Scene {
         // HP
         if (this.health > 100) this.health = 100;
         if (this.health <= 0) {
+            this.theme.stop();
             this.scene.start("GameOver", {
                 score: this.score,
                 whacks_good: this.whacks_good,
@@ -391,6 +404,7 @@ export class Game extends Scene {
                         this.whacks_missed++;
                         this.health += HP_BOT_MISSED;
                         this.camera.flash(100, 255, 0, 0);
+                        this.sfx.laugh.play();
                     }
                 }
                 break;
@@ -428,18 +442,22 @@ export class Game extends Scene {
             });
         camera.shake(100, 0.01);
 
+        this.sfx.punch.play();
+
         if (m.is_baddie()) {
             // score!
             this.score += SCORE_BOT_KILL;
             this.health += HP_BOT_KILL;
             this.whacks_good++;
             this.slot_gfx[i].play("bot1_die");
+            this.sfx.yell.play();
         } else {
             // brrrrp!
             this.health += HP_FRIENDLY_FIRE;
             this.whacks_bad++;
             this.slot_gfx[i].visible = false;
             camera.flash(100, 255, 0, 0);
+            this.sfx.ohno.play();
         }
     }
 
