@@ -208,8 +208,6 @@ export class Game extends Scene {
             txt.x = camera.centerX + Math.cos(off) * 240 - 5;
             txt.y = camera.centerY + Math.sin(off) * 240 - 5;
         }
-        const slot_bg = (this.slot_bg = cell_bg.getChildren());
-        slot_bg.forEach((c) => (c.alpha = 0));
 
         this.keys = [
             input.keyboard.addKey(KeyCodes.Q),
@@ -345,10 +343,6 @@ export class Game extends Scene {
                         this.whacks_bad++;
                         this.slot_gfx[i].visible = false;
                     }
-                    this.tweens.add({
-                        targets: this.slot_bg[i],
-                        alpha: 0,
-                    });
                 }
 
                 if (m.timer-- <= 0) {
