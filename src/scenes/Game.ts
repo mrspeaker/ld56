@@ -166,17 +166,20 @@ export class Game extends Scene {
             graphics.strokePath();
         }*/
 
-        const score = add.text(512, 384, "LD56", {
+        const font = {
             fontFamily: "Arial Black",
             fontSize: 38,
             color: "#ffffff",
             stroke: "#000000",
             strokeThickness: 8,
             align: "center",
-        });
-        score.setOrigin(0.5);
-        score.y = 20;
+        };
+        const score = add.text(392, 15, "", font);
         this.score_text = score;
+        this.hp_text = add.text(720, 15, "XX", font);
+
+        this.add.image(camera.centerX - 200, 40, "score");
+        this.add.image(camera.centerX + 150, 40, "hp");
 
         if (!input.keyboard) return;
 
@@ -250,7 +253,7 @@ export class Game extends Scene {
             quantity: 1,
             lifespan: 200,
             tint: 0xffff00,
-            alpha: 0.5,
+            opacity: 0.5,
             blendMode: Phaser.BlendModes.LIGHTER,
             //gravityY: 200,
             accelerationX: [-100, 100],
@@ -263,11 +266,8 @@ export class Game extends Scene {
     }
 
     draw_score() {
-        this.score_text.text =
-            "SCORE: " +
-            (this.score + "").padStart(5, "0") +
-            " HP: " +
-            this.health;
+        this.score_text.text = this.score;
+        this.hp_text.text = this.health;
     }
 
     update() {
@@ -390,6 +390,7 @@ export class Game extends Scene {
                     if (m.is_baddie()) {
                         this.whacks_missed++;
                         this.health += HP_BOT_MISSED;
+                        this.camera.flash(100, 255, 0, 0);
                     }
                 }
                 break;

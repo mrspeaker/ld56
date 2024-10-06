@@ -24,6 +24,8 @@ export class Preloader extends Scene {
         this.load.image("good", "good.png");
         this.load.image("keymouse", "keymouse.png");
         this.load.image("glass", "glass.png");
+        this.load.image("score", "score.png");
+        this.load.image("hp", "hp.png");
 
         this.load.spritesheet("hit", "hit.png", {
             frameWidth: 128,
