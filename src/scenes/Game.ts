@@ -290,8 +290,8 @@ export class Game extends Scene {
     }
 
     draw_score() {
-        this.score_text.text = this.slot_spawn_chance.toFixed(2); //this.score;
-        this.hp_text.text = this.slot_spawn_life.toFixed(2); //this.health;
+        this.score_text.text = this.score;
+        this.hp_text.text = this.health;
     }
 
     update() {

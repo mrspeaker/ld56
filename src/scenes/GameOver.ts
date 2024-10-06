@@ -47,7 +47,7 @@ export class GameOver extends Scene {
             align: "center",
         };
 
-        this.gameover_text = this.add.text(512, 384, this.score, font);
+        this.gameover_text = this.add.text(512, 398, this.score, font);
         this.gameover_text.setOrigin(0.5);
 
         const perc = this.whacks_good / (this.whacks_good + this.whacks_missed);
