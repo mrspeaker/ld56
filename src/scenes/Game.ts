@@ -37,6 +37,8 @@ export class Game extends Scene {
     NUM_ROWS = 2;
     NUM_MOLES = 6;
 
+    last_flash: number;
+
     score: number;
     health: number;
 
@@ -102,6 +104,8 @@ export class Game extends Scene {
         this.slot_gfx = [];
         this.cells = [];
         this.bombs = [];
+
+        this.last_flash = Date.now();
     }
 
     get_cell_target(src_x: number, src_y: number) {
@@ -344,6 +348,15 @@ export class Game extends Scene {
         this.hp_text.text = this.health;
     }
 
+    flash() {
+        // Not sure how much flashing is too much - but let's limit it to 2 times / second maximum
+        const now = Date.now();
+        const t = now - this.last_flash;
+        this.last_flash = now;
+        if (t < 500) return;
+        this.camera.flash(100, 255, 0, 0);
+    }
+
     update() {
         const { cells, camera, slots, bombs } = this;
 
@@ -474,7 +487,7 @@ export class Game extends Scene {
                     if (m.is_baddie()) {
                         this.whacks_missed++;
                         this.health += HP_BOT_MISSED;
-                        this.camera.flash(100, 255, 0, 0);
+                        this.flash();
                         this.sfx.laugh.play();
                     } else {
                         this.sfx.happy.play();
@@ -530,7 +543,7 @@ export class Game extends Scene {
             this.health += HP_FRIENDLY_FIRE;
             this.whacks_bad++;
             this.slot_gfx[i].visible = false;
-            camera.flash(100, 255, 0, 0);
+            this.flash();
             this.sfx.ohno.play();
         }
     }
