@@ -117,7 +117,7 @@ export class Game extends Scene {
 
         input.setDefaultCursor("url(assets/syr.png), pointer");
 
-        const theme = this.sound.add("theme", { volume: 1 });
+        const theme = this.sound.add("theme", { volume: 0.5 });
         theme.play();
         theme.loop = true;
         this.theme = theme;
@@ -242,20 +242,27 @@ export class Game extends Scene {
                 cell_size / 2 +
                 gap_y;
 
-            const txt = this.add.text(x - 50, y - 50, "QWEDSA".split("")[i], {
-                fontFamily: "Arial Black",
-                fontSize: 18,
-                color: "#ffffff",
-            });
-            this.slots.push(new Slot(i));
+            const slot = new Slot(i);
+            slot.key_gfx = this.add.text(
+                x - 50,
+                y - 50,
+                "QWEDSA".split("")[i],
+                {
+                    fontFamily: "Arial Black",
+                    fontSize: 18,
+                    color: "#ffffff",
+                },
+            );
+            this.slots.push(slot);
+
             const off =
                 (i / this.NUM_MOLES) * Math.PI * 2 - Phaser.Math.DegToRad(145);
             const rad = 160;
             this.slot_gfx[i].x = camera.centerX + Math.cos(off) * rad;
             this.slot_gfx[i].y = camera.centerY + Math.sin(off) * rad;
             this.slot_gfx[i].visible = false;
-            txt.x = camera.centerX + Math.cos(off - 0.1) * 240;
-            txt.y = camera.centerY + Math.sin(off - 0.1) * 240;
+            slot.key_gfx.x = camera.centerX + Math.cos(off - 0.1) * 240;
+            slot.key_gfx.y = camera.centerY + Math.sin(off - 0.1) * 240;
         }
 
         this.keys = [
@@ -277,7 +284,6 @@ export class Game extends Scene {
             quantity: 1,
             lifespan: 200,
             tint: 0xffff00,
-            opacity: 0.5,
             blendMode: Phaser.BlendModes.LIGHTER,
             //gravityY: 200,
             accelerationX: [-100, 100],
@@ -287,6 +293,48 @@ export class Game extends Scene {
 
         const glass = this.add.image(camera.centerX, camera.centerY, "glass");
         glass.setAlpha(0.14);
+
+        const helpbot = this.add.image(150, 400, "helpbot");
+        helpbot.setAlpha(0);
+        const helpmouse = this.add.image(870, 400, "helpmouse");
+        helpmouse.setAlpha(0);
+        helpmouse.setScale(0.8);
+        this.tweens.chain({
+            targets: helpbot,
+            onComplete: () => {
+                helpbot.destroy();
+            },
+            tweens: [
+                {
+                    alpha: 1,
+                    delay: 1000,
+                    duration: 1000,
+                },
+                {
+                    alpha: 0,
+                    delay: 3000,
+                    duration: 1000,
+                },
+            ],
+        });
+        this.tweens.chain({
+            targets: helpmouse,
+            onComplete: () => {
+                helpmouse.destroy();
+            },
+            tweens: [
+                {
+                    alpha: 1,
+                    delay: 9000,
+                    duration: 1000,
+                },
+                {
+                    alpha: 0,
+                    delay: 3000,
+                    duration: 1000,
+                },
+            ],
+        });
     }
 
     draw_score() {
@@ -295,7 +343,7 @@ export class Game extends Scene {
     }
 
     update() {
-        const { keys, cells, camera, slots, bombs } = this;
+        const { cells, camera, slots, bombs } = this;
 
         cells.forEach((c) => {
             if (c.update()) {
@@ -372,7 +420,7 @@ export class Game extends Scene {
         this.draw_score();
 
         // Update slots
-        slots.forEach((m, i) => this.handle_slot(m, i));
+        slots.forEach((m) => this.handle_slot(m));
 
         // Spawn any new slots
         this.spawn_slots();
@@ -394,8 +442,14 @@ export class Game extends Scene {
             this.health > 50 ? 0 : ((50 - this.health) / 50) * 40;
     }
 
-    handle_slot(m: Slot, i: number) {
+    handle_slot(m: Slot) {
         const { keys, slot_gfx } = this;
+
+        if (keys[m.idx].isDown) {
+            m.key_gfx?.setTint(0xff8800);
+        } else {
+            m.key_gfx?.setTint(0xffffff);
+        }
 
         switch (m.state) {
             case slot_state.MOVING_IN:
@@ -408,8 +462,8 @@ export class Game extends Scene {
                 }
                 break;
             case slot_state.ALIVE:
-                if (keys[i].isDown) {
-                    this.handle_whack(m, i);
+                if (keys[m.idx].isDown) {
+                    this.handle_whack(m, m.idx);
                 }
 
                 // Handle timer
