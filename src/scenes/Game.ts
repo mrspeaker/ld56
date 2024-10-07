@@ -271,14 +271,32 @@ export class Game extends Scene {
             slot.key_gfx.y = camera.centerY + Math.sin(off - 0.1) * 240;
         }
 
-        this.keys = [
-            input.keyboard.addKey(KeyCodes.Q),
-            input.keyboard.addKey(KeyCodes.W),
-            input.keyboard.addKey(KeyCodes.E),
-            input.keyboard.addKey(KeyCodes.D),
-            input.keyboard.addKey(KeyCodes.S),
-            input.keyboard.addKey(KeyCodes.A),
-        ];
+        const key_map = ["Q", "W", "E", "D", "S", "A"];
+        if (window?.URLSearchParams && window?.location?.search) {
+            for (let i = 0; i < key_map.length; i++) {
+                const parms = new URLSearchParams(window.location.search);
+                const key_txt = (i + 1).toString();
+                if (parms.has(key_txt)) {
+                    const phaser_key = parms.get(key_txt).toUpperCase();
+                    const code = KeyCodes[phaser_key];
+                    if (code) {
+                        console.log(
+                            "switching keys. Was:",
+                            key_map[i],
+                            "Now:",
+                            key_txt,
+                            phaser_key,
+                            code,
+                        );
+                        key_map[i] = phaser_key;
+                    }
+                }
+            }
+        }
+        this.keys = key_map.map((key_txt) =>
+            input.keyboard.addKey(KeyCodes[key_txt]),
+        );
+
         const space = input.keyboard.addKey(KeyCodes.SPACE);
         space.once("down", () => {
             //            this.health = 2;
