@@ -7,6 +7,7 @@ const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
 const SCORE_BOT_KILL = 100;
 const SCORE_CELL_KILL = 20;
+const SCORE_GOODY_SURVIVED = 8;
 const HP_BOT_KILL = 0;
 const HP_BOT_MISSED = -10;
 const HP_CELL_ESCAPED = -5;
@@ -129,6 +130,7 @@ export class Game extends Scene {
             yell: this.sound.add("yell", { volume: 1 }),
             exp: this.sound.add("exp", { volume: 1 }),
             exp2: this.sound.add("exp2", { volume: 1 }),
+            happy: this.sound.add("happy", { volume: 0.5 }),
         };
 
         const camera = (this.camera = this.cameras.main);
@@ -474,6 +476,9 @@ export class Game extends Scene {
                         this.health += HP_BOT_MISSED;
                         this.camera.flash(100, 255, 0, 0);
                         this.sfx.laugh.play();
+                    } else {
+                        this.sfx.happy.play();
+                        this.score += SCORE_GOODY_SURVIVED;
                     }
                 }
                 break;

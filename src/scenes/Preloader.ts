@@ -32,6 +32,7 @@ export class Preloader extends Scene {
         this.load.audio("laugh", "sfx/laugh.mp3");
         this.load.audio("ohno", "sfx/ohno.mp3");
         this.load.audio("punch", "sfx/punch.mp3");
+        this.load.audio("happy", "sfx/happy.mp3");
         this.load.audio("splode", "sfx/rev-bleb.mp3");
         this.load.audio("yell", "sfx/yell-get.mp3");
         this.load.audio("exp", "sfx/exp.mp3");
