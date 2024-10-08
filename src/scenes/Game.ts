@@ -133,7 +133,7 @@ export class Game extends Scene {
             splode: this.sound.add("splode", { volume: 1 }),
             yell: this.sound.add("yell", { volume: 1 }),
             exp: this.sound.add("exp", { volume: 1 }),
-            exp2: this.sound.add("exp2", { volume: 1 }),
+            exp2: this.sound.add("exp2", { volume: 0.5 }),
             happy: this.sound.add("happy", { volume: 0.5 }),
         };
 
