@@ -79,7 +79,7 @@ export class Preloader extends Scene {
         this.anims.create({
             key: "blerb",
             frames: this.anims.generateFrameNumbers("blerb"),
-            frameRate: 10,
+            frameRate: 8,
             repeat: -1,
         });
 
@@ -101,7 +101,7 @@ export class Preloader extends Scene {
                 start: 0,
                 end: 9,
             }),
-            frameRate: 10,
+            frameRate: 9,
             repeat: -1,
         });
         this.anims.create({
