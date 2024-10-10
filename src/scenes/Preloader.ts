@@ -62,6 +62,10 @@ export class Preloader extends Scene {
             frameWidth: 128,
             frameHeight: 128,
         });
+        this.load.spritesheet("sidebot", "sidebot.png", {
+            frameWidth: 128,
+            frameHeight: 128,
+        });
         this.load.spritesheet("mol", "mol.png", {
             frameWidth: 512,
             frameHeight: 512 * (9 / 16),
@@ -98,6 +102,15 @@ export class Preloader extends Scene {
         this.anims.create({
             key: "bot1",
             frames: this.anims.generateFrameNumbers("bot1", {
+                start: 0,
+                end: 9,
+            }),
+            frameRate: 9,
+            repeat: -1,
+        });
+        this.anims.create({
+            key: "sidebot",
+            frames: this.anims.generateFrameNumbers("sidebot", {
                 start: 0,
                 end: 9,
             }),

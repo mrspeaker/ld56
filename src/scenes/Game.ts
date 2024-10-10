@@ -489,7 +489,15 @@ export class Game extends Scene {
                 if (m.timer-- <= 0) {
                     slot_gfx[m.idx].visible = true;
                     slot_gfx[m.idx].setAngle(Phaser.Math.FloatBetween(-20, 20));
-                    slot_gfx[m.idx].play(["bot1", "blerb", "blerb2"][m.type]);
+                    if (m.type == slot_type.AI_BOT) {
+                        slot_gfx[m.idx].play(
+                            ["bot1", "sidebot"][Phaser.Math.Between(0, 1)],
+                        );
+                    } else {
+                        slot_gfx[m.idx].play(
+                            ["bot1", "blerb", "blerb2"][m.type],
+                        );
+                    }
                     m.state = slot_state.ALIVE;
                     m.timer = m.life;
                 }
