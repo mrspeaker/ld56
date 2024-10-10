@@ -439,7 +439,7 @@ export class Game extends Scene {
                 pointer.position.x,
                 pointer.position.y,
             );
-            if (dist >= Game.RADIUS) {
+            if (dist >= Game.RADIUS * 0.85) {
                 // Drop a bomba!
                 this.bomb_cooldown = BOMB_COOLDOWN;
                 this.sfx.splode.play();
@@ -518,6 +518,11 @@ export class Game extends Scene {
                     } else {
                         this.sfx.happy.play();
                         this.score += SCORE_GOODY_SURVIVED;
+                        this.tweens.add({
+                            targets: slot_gfx[m.idx],
+                            alpha: 0,
+                            duration: 250,
+                        });
                     }
                 }
                 break;
@@ -535,6 +540,7 @@ export class Game extends Scene {
                     m.state = slot_state.EMPTY;
                     slot_gfx[m.idx].visible = false;
                     slot_gfx[m.idx].flipY = false;
+                    slot_gfx[m.idx].alpha = 1;
                 }
                 break;
             default:
