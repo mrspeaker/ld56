@@ -9,6 +9,7 @@ const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 const SCORE_BOT_KILL = 100;
 const SCORE_CELL_KILL = 20;
 const SCORE_GOODY_SURVIVED = 8;
+const HP_INITIAL = 100;
 const HP_BOT_KILL = 0;
 const HP_BOT_MISSED = -10;
 const HP_CELL_ESCAPED = -5;
@@ -16,6 +17,11 @@ const HP_FRIENDLY_FIRE = -13;
 const BOMB_COOLDOWN = 20;
 const BOMB_CHARGE_TIME = 30;
 const BOMB_EXPLOSION_RADIUS = 80;
+
+enum game_state {
+    PLAYING,
+    DEAD,
+}
 
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
@@ -28,11 +34,27 @@ export class Game extends Scene {
     static MAX_BOMBS = 30;
     static RADIUS = 220;
 
+    state: game_state;
+    state_time: number;
     slots: Slot[];
     slot_gfx: Phaser.GameObjects.GameObject[];
     cells: Cell[];
     bombs: Bomb[];
     bomb_group: Phaser.GameObjects.Group;
+
+    score_text: Phaser.GameObjects.Text;
+    hp_text: Phaser.GameObjects.Text;
+    theme: Phaser.Sound.BaseSound;
+    sfx: {
+        laugh: Phaser.Sound.BaseSound;
+        ohno: Phaser.Sound.BaseSound;
+        punch: Phaser.Sound.BaseSound;
+        splode: Phaser.Sound.BaseSound;
+        yell: Phaser.Sound.BaseSound;
+        exp: Phaser.Sound.BaseSound;
+        exp2: Phaser.Sound.BaseSound;
+        happy: Phaser.Sound.BaseSound;
+    };
 
     NUM_COLS = 3;
     NUM_ROWS = 2;
@@ -74,7 +96,8 @@ export class Game extends Scene {
     }
 
     init() {
-        this.health = 100;
+        this.state = game_state.PLAYING;
+        this.health = HP_INITIAL;
         this.score = 0;
         this.bomb_cooldown = 0;
         this.whacks_good = 0;
@@ -140,12 +163,10 @@ export class Game extends Scene {
 
         const camera = (this.camera = this.cameras.main);
         this.camera.setBackgroundColor(0x000000);
-        //// this.camera.postFX.addTiltShift(0.1, 1.0, 0.2);
         this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
 
-        const esc = input.keyboard.addKey(KeyCodes.ESC);
-        esc.on("down", (key, event) => {
-            //            this.health = 2;
+        // Dodgy handle escape
+        input.keyboard?.addKey(KeyCodes.ESC).on("down", () => {
             if (confirm("Quit?")) {
                 this.theme.stop();
                 this.scene.start("MainMenu");
@@ -202,9 +223,9 @@ export class Game extends Scene {
             strokeThickness: 8,
             align: "center",
         };
-        const score = add.text(392, 15, "", font);
-        this.score_text = score;
-        this.hp_text = add.text(720, 15, "XX", font);
+
+        this.score_text = add.text(392, 15, "0", font);
+        this.hp_text = add.text(720, 15, "100", font);
 
         this.add.image(camera.centerX - 200, 40, "score");
         this.add.image(camera.centerX + 150, 40, "hp");
@@ -360,8 +381,8 @@ export class Game extends Scene {
     }
 
     draw_score() {
-        this.score_text.text = this.score;
-        this.hp_text.text = this.health;
+        this.score_text.text = this.score.toFixed(0);
+        this.hp_text.text = this.health.toFixed(0);
     }
 
     flash() {
@@ -374,6 +395,20 @@ export class Game extends Scene {
     }
 
     update() {
+        switch (this.state) {
+            case game_state.PLAYING:
+                this.update_playing();
+                break;
+            case game_state.DEAD:
+                this.update_dead();
+                break;
+            default:
+                break;
+        }
+        this.draw_score();
+    }
+
+    update_playing() {
         const { cells, camera, slots, bombs } = this;
 
         cells.forEach((c) => {
@@ -448,8 +483,6 @@ export class Game extends Scene {
             }
         }
 
-        this.draw_score();
-
         // Update slots
         slots.forEach((m) => this.handle_slot(m));
 
@@ -459,18 +492,31 @@ export class Game extends Scene {
         // HP
         if (this.health > 100) this.health = 100;
         if (this.health <= 0) {
+            this.health = 0;
             this.theme.stop();
-            this.scene.start("GameOver", {
-                score: this.score,
-                whacks_good: this.whacks_good,
-                whacks_bad: this.whacks_bad,
-                whacks_missed: this.whacks_missed,
-                cells_killed: this.cells_killed,
-                cells_escaped: this.cells_escaped,
-            });
+            this.state = game_state.DEAD;
+            this.state_time = 0;
         }
         camera.backgroundColor.red =
             this.health > 50 ? 0 : ((50 - this.health) / 50) * 40;
+    }
+
+    update_dead() {
+        if (this.state_time === 1) {
+            this.flash();
+            this.sfx.punch.play();
+        }
+        if (this.state_time++ < 100) {
+            return;
+        }
+        this.scene.start("GameOver", {
+            score: this.score,
+            whacks_good: this.whacks_good,
+            whacks_bad: this.whacks_bad,
+            whacks_missed: this.whacks_missed,
+            cells_killed: this.cells_killed,
+            cells_escaped: this.cells_escaped,
+        });
     }
 
     handle_slot(m: Slot) {

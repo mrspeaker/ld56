@@ -5,6 +5,7 @@ export class GameOver extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
     gameover_text: Phaser.GameObjects.Text;
+    stats: Phaser.GameObjects.Text;
 
     score: number;
     whacks_good: number;
@@ -37,7 +38,7 @@ export class GameOver extends Scene {
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x000000);
 
-        this.sound.add("laugh", { volume: 1 }).play();
+        this.sound.add("yell", { volume: 1 }).play();
 
         this.add.image(512, 300, "gameover");
 
@@ -48,10 +49,16 @@ export class GameOver extends Scene {
             align: "center",
         };
 
-        this.gameover_text = this.add.text(512, 398, this.score, font);
+        this.gameover_text = this.add.text(
+            512,
+            398,
+            this.score.toFixed(0),
+            font,
+        );
         this.gameover_text.setOrigin(0.5);
 
-        const perc = this.whacks_good / (this.whacks_good + this.whacks_missed);
+        const total_whacks = Math.max(1, this.whacks_good + this.whacks_missed);
+        const perc = this.whacks_good / total_whacks;
         this.stats = this.add.text(
             750,
             400,
