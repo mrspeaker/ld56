@@ -66,10 +66,6 @@ export class Preloader extends Scene {
             frameWidth: 128,
             frameHeight: 128,
         });
-        this.load.spritesheet("mol", "mol.png", {
-            frameWidth: 512,
-            frameHeight: 512 * (9 / 16),
-        });
     }
 
     create() {
@@ -125,12 +121,6 @@ export class Preloader extends Scene {
             }),
             frameRate: 20,
             repeat: 0,
-        });
-        this.anims.create({
-            key: "mol",
-            frames: this.anims.generateFrameNumbers("mol"),
-            frameRate: 3,
-            repeat: -1,
         });
         this.anims.create({
             key: "meta",

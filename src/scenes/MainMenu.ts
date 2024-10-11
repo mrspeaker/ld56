@@ -10,7 +10,6 @@ export class MainMenu extends Scene {
     }
 
     create() {
-        //        this.background = this.add.image(512, 384, "background");
         this.input.setDefaultCursor("url(assets/syr.png), pointer");
 
         this.add.image(100, 180, "bad");
@@ -27,18 +26,6 @@ export class MainMenu extends Scene {
 
         this.add.image(120, 620, "keymouse");
 
-        /*this.title = this.add
-            .text(402, 740, "Keys: whack creatures. Mouse: explode cells", {
-                fontFamily: "Arial Black",
-                fontSize: 28,
-                color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 8,
-                align: "center",
-            })
-            .setOrigin(0.5);*/
-
-        //this.input.once("pointerdown", () => {
         this.input.once("pointerdown", () => {
             this.scene.start("Game");
         });
@@ -48,7 +35,5 @@ export class MainMenu extends Scene {
             .once("down", () => {
                 this.scene.start("Game");
             });
-
-        //});
     }
 }

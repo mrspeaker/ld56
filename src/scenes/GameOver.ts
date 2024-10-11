@@ -1,4 +1,5 @@
 import { Scene } from "phaser";
+import { FONT_FAMILY } from "../font.ts";
 
 export class GameOver extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
@@ -41,7 +42,7 @@ export class GameOver extends Scene {
         this.add.image(512, 300, "gameover");
 
         const font = {
-            fontFamily: "Arial Black",
+            fontFamily: FONT_FAMILY,
             fontSize: 64,
             color: "#ffffff",
             align: "center",
@@ -57,7 +58,7 @@ export class GameOver extends Scene {
             `bots destroyed: ${Math.round(perc * 100)}%
 good guys killed: ${this.whacks_bad}
 cells destroyed: ${this.cells_killed}`,
-            { ...font, fontSize: 24 },
+            { ...font, fontSize: 24 }
         );
 
         this.input.on("pointerdown", () => {
