@@ -64,13 +64,16 @@ export class GameOver extends Scene {
         this.gameover_text.setOrigin(0.5);
 
         const total_whacks = Math.max(1, this.whacks_good + this.whacks_missed);
+        const total_cells = Math.max(1, this.cells_killed + this.cells_escaped);
         const perc = this.whacks_good / total_whacks;
+        const perc_cells = this.cells_killed / total_cells;
+
         this.stats = this.add.text(
             750,
             400,
             `bots destroyed: ${Math.round(perc * 100)}%
-good guys killed: ${this.whacks_bad}
-cells destroyed: ${this.cells_killed}`,
+cells destroyed: ${Math.round(perc_cells * 100)}%
+good guys killed: ${this.whacks_bad}`,
             { ...font, fontSize: 24 },
         );
 

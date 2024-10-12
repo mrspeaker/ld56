@@ -14,7 +14,7 @@ const HP_BOT_KILL = 0;
 const HP_BOT_MISSED = -10;
 const HP_CELL_ESCAPED = -5;
 const HP_FRIENDLY_FIRE = -13;
-const BOMB_COOLDOWN = 20;
+const BOMB_COOLDOWN = 15;
 const BOMB_CHARGE_TIME = 30;
 const BOMB_EXPLOSION_RADIUS = 80;
 
