@@ -49,12 +49,18 @@ export class GameOver extends Scene {
             align: "center",
         };
 
-        this.gameover_text = this.add.text(
-            512,
-            398,
-            this.score.toFixed(0),
-            font,
-        );
+        this.gameover_text = this.add
+            .text(512, 398, this.score.toFixed(0), font)
+            .setOrigin(0.5);
+        this.tweens.add({
+            targets: this.gameover_text,
+            scale: 1.2,
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            duration: 2000,
+            repeat: -1,
+        });
+
         this.gameover_text.setOrigin(0.5);
 
         const total_whacks = Math.max(1, this.whacks_good + this.whacks_missed);
@@ -65,7 +71,7 @@ export class GameOver extends Scene {
             `bots destroyed: ${Math.round(perc * 100)}%
 good guys killed: ${this.whacks_bad}
 cells destroyed: ${this.cells_killed}`,
-            { ...font, fontSize: 24 }
+            { ...font, fontSize: 24 },
         );
 
         this.input.on("pointerdown", () => {

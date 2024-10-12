@@ -188,7 +188,7 @@ export class Game extends Scene {
             camera.centerY,
             Game.RADIUS,
             0x000000,
-            0.8
+            0.8,
         );
 
         this.add.circle(
@@ -196,7 +196,7 @@ export class Game extends Scene {
             camera.centerY,
             Game.RADIUS,
             0x7dff7d,
-            0.1
+            0.1,
         );
         /*        const bits = 10;
         for (let i = 0; i < bits; i++) {
@@ -221,10 +221,10 @@ export class Game extends Scene {
             color: "#ffffff",
             stroke: "#000000",
             strokeThickness: 8,
-            align: "center",
+            align: "right",
         };
 
-        this.score_text = add.text(392, 15, "0", font);
+        this.score_text = add.text(392, 15, "0", font); //.setOrigin(0.5);
         this.hp_text = add.text(720, 15, "100", font);
 
         this.add.image(camera.centerX - 200, 40, "score");
@@ -276,7 +276,7 @@ export class Game extends Scene {
                     fontFamily: FONT_FAMILY,
                     fontSize: 18,
                     color: "#ffffff",
-                }
+                },
             );
             this.slots.push(slot);
 
@@ -305,7 +305,7 @@ export class Game extends Scene {
                             "Now:",
                             key_txt,
                             phaser_key,
-                            code
+                            code,
                         );
                         key_map[i] = phaser_key;
                     }
@@ -313,7 +313,7 @@ export class Game extends Scene {
             }
         }
         this.keys = key_map.map((key_txt) =>
-            input.keyboard.addKey(KeyCodes[key_txt])
+            input.keyboard.addKey(KeyCodes[key_txt]),
         );
 
         const space = input.keyboard.addKey(KeyCodes.SPACE);
@@ -381,8 +381,32 @@ export class Game extends Scene {
     }
 
     draw_score() {
-        this.score_text.text = this.score.toFixed(0);
-        this.hp_text.text = this.health.toFixed(0);
+        const { score, score_text, health, hp_text } = this;
+        const anim = (scene: Phaser.Scene, target: any) => {
+            const boop = scene.tweens.getTweensOf(target);
+            if (!boop.length) {
+                scene.tweens.add({
+                    targets: target,
+                    scale: 1.3,
+                    y: "-=10",
+                    x: "-=10",
+                    ease: "Sine.easeInOut",
+                    yoyo: true,
+                    duration: 100,
+                });
+            }
+        };
+        const sc = score.toFixed(0);
+        if (sc != score_text.text) {
+            anim(this, score_text);
+            score_text.text = sc;
+        }
+
+        const hp = health.toFixed(0);
+        if (hp != hp_text.text) {
+            anim(this, hp_text);
+            hp_text.text = hp;
+        }
     }
 
     flash() {
@@ -438,7 +462,7 @@ export class Game extends Scene {
             this.cell_spawn_timer = this.cell_spawn_rate;
             this.cell_spawn_rate = Math.max(
                 this.cell_spawn_rate_fastest,
-                this.cell_spawn_rate + this.cell_spawn_rate_inc
+                this.cell_spawn_rate + this.cell_spawn_rate_inc,
             );
         }
 
@@ -470,7 +494,7 @@ export class Game extends Scene {
                 camera.centerX,
                 camera.centerY,
                 pointer.position.x,
-                pointer.position.y
+                pointer.position.y,
             );
             if (dist >= Game.RADIUS * 0.85) {
                 // Drop a bomba!
@@ -535,11 +559,11 @@ export class Game extends Scene {
                     slot_gfx[m.idx].setAngle(Phaser.Math.FloatBetween(-20, 20));
                     if (m.type == slot_type.AI_BOT) {
                         slot_gfx[m.idx].play(
-                            ["bot1", "sidebot"][Phaser.Math.Between(0, 1)]
+                            ["bot1", "sidebot"][Phaser.Math.Between(0, 1)],
                         );
                     } else {
                         slot_gfx[m.idx].play(
-                            ["bot1", "blerb", "blerb2"][m.type]
+                            ["bot1", "blerb", "blerb2"][m.type],
                         );
                     }
                     m.state = slot_state.ALIVE;
@@ -644,20 +668,20 @@ export class Game extends Scene {
                 this.slot_spawn_life +
                     Phaser.Math.Between(
                         -this.slot_spawn_life_deviation,
-                        this.slot_spawn_life_deviation
-                    )
+                        this.slot_spawn_life_deviation,
+                    ),
             );
         }
 
         // Update every frame
         this.slot_spawn_chance = Math.min(
             this.slot_spawn_chance_max,
-            this.slot_spawn_chance + this.slot_spawn_chance_inc
+            this.slot_spawn_chance + this.slot_spawn_chance_inc,
         );
         // Get faster each time
         this.slot_spawn_life = Math.max(
             this.slot_spawn_life_min,
-            this.slot_spawn_life + this.slot_spawn_life_inc
+            this.slot_spawn_life + this.slot_spawn_life_inc,
         );
     }
 }
