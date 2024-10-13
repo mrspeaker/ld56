@@ -20,6 +20,7 @@ export class Slot {
     life: number;
     idx: number;
     key_gfx: Phaser.GameObjects.Text | null;
+    seg_gfx: Phaser.GameObjects.Graphics | null;
     constructor(idx: number) {
         this.state = slot_state.EMPTY;
         this.timer = 0;

@@ -198,22 +198,6 @@ export class Game extends Scene {
             0x7dff7d,
             0.1,
         );
-        /*        const bits = 10;
-        for (let i = 0; i < bits; i++) {
-            const graphics = this.add.graphics();
-            graphics.lineStyle(4, 0x7dff7d, 1);
-            graphics.beginPath();
-            const start = (i / bits) * (Math.PI * 2);
-            graphics.arc(
-                camera.centerX,
-                camera.centerY,
-                220,
-                start, //Phaser.Math.DegToRad(90),
-                start - 0.5, //Phaser.Math.DegToRad(180),
-                true,
-            );
-            graphics.strokePath();
-        }*/
 
         const font = {
             fontFamily: FONT_FAMILY,
@@ -268,6 +252,8 @@ export class Game extends Scene {
                 gap_y;
 
             const slot = new Slot(i);
+
+            // Graphics for the key letter around circle
             slot.key_gfx = this.add.text(
                 x - 50,
                 y - 50,
@@ -278,6 +264,24 @@ export class Game extends Scene {
                     color: "#ffffff",
                 },
             );
+
+            // Segment arc around circle
+            const arc = this.add.graphics();
+            arc.lineStyle(4, 0x7dff7d, 0.4);
+            arc.beginPath();
+            const start = Math.PI + (i / this.NUM_MOLES) * (Math.PI * 2);
+            arc.arc(
+                camera.centerX,
+                camera.centerY,
+                220,
+                start - 0,
+                start + (Math.PI * 2) / this.NUM_MOLES,
+                false,
+            );
+            arc.strokePath();
+            arc.alpha = 0;
+            slot.seg_gfx = arc;
+
             this.slots.push(slot);
 
             const off =
@@ -548,8 +552,10 @@ export class Game extends Scene {
 
         if (keys[m.idx].isDown) {
             m.key_gfx?.setTint(0xff8800);
+            m.seg_gfx.alpha = 1;
         } else {
             m.key_gfx?.setTint(0xffffff);
+            m.seg_gfx.alpha = 0;
         }
 
         switch (m.state) {
