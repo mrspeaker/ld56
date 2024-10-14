@@ -25,7 +25,6 @@ enum game_state {
 
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
-    bg: Phaser.GameObjects.Image;
     msg_text: Phaser.GameObjects.Text;
 
     keys: Phaser.Input.Keyboard.Key[];
@@ -124,7 +123,7 @@ export class Game extends Scene {
         this.slot_spawn_life_inc = -0.01; // popup up for less and less time
 
         this.slot_spawn_ai_chance = 0.6;
-        this.slot_spawn_sploder_chance = 0.5;
+        this.slot_spawn_sploder_chance = 0.05;
 
         this.slots = [];
         this.slot_gfx = [];
@@ -134,20 +133,26 @@ export class Game extends Scene {
         this.last_flash = Date.now();
     }
 
-    get_cell_target(src_x: number, src_y: number) {
-        const { camera } = this;
-        const target = new Phaser.Geom.Point(camera.centerX, camera.centerY);
-        const a = Phaser.Math.Angle.Between(src_x, src_y, target.x, target.y);
-        target.x -= Math.cos(a) * 200;
-        target.y -= Math.sin(a) * 200;
-        return target;
+    create() {
+        const camera = this.create_camera();
+        this.create_sound();
+        this.create_input();
+
+        this.create_bg(camera);
+        this.create_score(camera);
+        this.create_playfield(camera);
+        this.create_fg(camera);
+        this.create_helps();
     }
 
-    create() {
-        const { add, input } = this;
+    create_camera() {
+        const camera = (this.camera = this.cameras.main);
+        this.camera.setBackgroundColor(0x000000);
+        this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
+        return camera;
+    }
 
-        input.setDefaultCursor("url(assets/syr.png), pointer");
-
+    create_sound() {
         const theme = this.sound.add("theme", { volume: 0.5 });
         theme.play();
         theme.loop = true;
@@ -162,40 +167,53 @@ export class Game extends Scene {
             exp2: this.sound.add("exp2", { volume: 0.5 }),
             happy: this.sound.add("happy", { volume: 0.5 }),
         };
+    }
 
-        const camera = (this.camera = this.cameras.main);
-        this.camera.setBackgroundColor(0x000000);
-        this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
+    create_input() {
+        const { input } = this;
+
+        input.setDefaultCursor("url(assets/syr.png), pointer");
 
         // Dodgy handle escape
         input.keyboard?.addKey(KeyCodes.ESC).on("down", () => {
             if (confirm("Quit?")) {
-                this.theme.stop();
+                this.theme?.stop();
                 this.scene.start("MainMenu");
             }
         });
 
-        this.bg = add.image(camera.centerX, camera.centerY, "background");
-        this.bg.setAlpha(0.1);
-        this.bg.setDisplaySize(camera.width, camera.height);
-        this.bg.postFX.addVignette(0.5, 0.5, 0.6);
+        // Handle key reconfigure
+        const key_map = ["Q", "W", "E", "D", "S", "A"];
+        if (window?.URLSearchParams && window?.location?.search) {
+            for (let i = 0; i < key_map.length; i++) {
+                const parms = new URLSearchParams(window.location.search);
+                const key_txt = (i + 1).toString();
+                if (parms.has(key_txt)) {
+                    const phaser_key = parms.get(key_txt).toUpperCase();
+                    const code = KeyCodes[phaser_key];
+                    if (code) {
+                        console.log(
+                            "switching keys. Was:",
+                            key_map[i],
+                            "Now:",
+                            key_txt,
+                            phaser_key,
+                            code,
+                        );
+                        key_map[i] = phaser_key;
+                    }
+                }
+            }
+        }
 
-        this.add.circle(
-            camera.centerX,
-            camera.centerY,
-            Game.RADIUS,
-            0x000000,
-            0.8,
+        if (!input.keyboard) return;
+
+        this.keys = key_map.map((key_txt) =>
+            input.keyboard.addKey(KeyCodes[key_txt]),
         );
+    }
 
-        this.add.circle(
-            camera.centerX,
-            camera.centerY,
-            Game.RADIUS,
-            0x7dff7d,
-            0.1,
-        );
-
+    create_score(camera: Phaser.Cameras.Scene2D.Camera) {
         const font = {
             fontFamily: FONT_FAMILY,
             fontSize: 38,
@@ -205,14 +223,98 @@ export class Game extends Scene {
             align: "right",
         };
 
-        this.score_text = add.text(392, 15, "0", font); //.setOrigin(0.5);
-        this.hp_text = add.text(720, 15, "100", font);
+        this.score_text = this.add.text(392, 15, "0", font); //.setOrigin(0.5);
+        this.hp_text = this.add.text(720, 15, "100", font);
 
         this.add.image(camera.centerX - 200, 40, "score");
         this.add.image(camera.centerX + 150, 40, "hp");
+    }
 
-        if (!input.keyboard) return;
+    create_bg(camera: Phaser.Cameras.Scene2D.Camera) {
+        const bg = this.add.image(camera.centerX, camera.centerY, "background");
+        bg.setAlpha(0.1);
+        bg.setDisplaySize(camera.width, camera.height);
+        bg.postFX.addVignette(0.5, 0.5, 0.6);
+        this.add.circle(
+            camera.centerX,
+            camera.centerY,
+            Game.RADIUS,
+            0x000000,
+            0.8,
+        );
+        this.add.circle(
+            camera.centerX,
+            camera.centerY,
+            Game.RADIUS,
+            0x7dff7d,
+            0.1,
+        );
+    }
 
+    create_fg(camera: Phaser.Cameras.Scene2D.Camera) {
+        // Lil bg effects
+        this.add.particles(0, 100, "drop", {
+            x: { min: 0, max: camera.width },
+            y: { min: -100, max: camera.height },
+            quantity: 1,
+            lifespan: 200,
+            tint: 0xffff00,
+            blendMode: Phaser.BlendModes.LIGHTER,
+            accelerationX: [-100, 100],
+            accelerationY: [-100, 100],
+            scale: 0.1,
+        });
+
+        const glass = this.add.image(camera.centerX, camera.centerY, "glass");
+        glass.setAlpha(0.14);
+    }
+
+    create_helps() {
+        // Help texts
+        const helpbot = this.add.image(150, 400, "helpbot");
+        helpbot.setAlpha(0);
+        const helpmouse = this.add.image(870, 400, "helpmouse");
+        helpmouse.setAlpha(0);
+        helpmouse.setScale(0.8);
+        this.tweens.chain({
+            targets: helpbot,
+            onComplete: () => {
+                helpbot.destroy();
+            },
+            tweens: [
+                {
+                    alpha: 1,
+                    delay: 1000,
+                    duration: 1000,
+                },
+                {
+                    alpha: 0,
+                    delay: 3000,
+                    duration: 1000,
+                },
+            ],
+        });
+        this.tweens.chain({
+            targets: helpmouse,
+            onComplete: () => {
+                helpmouse.destroy();
+            },
+            tweens: [
+                {
+                    alpha: 1,
+                    delay: 9000,
+                    duration: 1000,
+                },
+                {
+                    alpha: 0,
+                    delay: 3000,
+                    duration: 1000,
+                },
+            ],
+        });
+    }
+
+    create_playfield(camera: Phaser.Cameras.Scene2D.Camera) {
         const cell_group = this.add.group();
         for (let i = 0; i < Game.MAX_CELLS; i++) {
             const cell = new Cell(this, 0, 0);
@@ -229,8 +331,6 @@ export class Game extends Scene {
             this.bomb_group.add(b, true);
         }
 
-        const cell_bg = this.add.group();
-        cell_bg.setDepth(2);
         this.slot_gfx = this.add
             .group({ key: "blerb", frameQuantity: this.NUM_MOLES })
             .getChildren() as Phaser.GameObjects.Sprite[];
@@ -295,95 +395,6 @@ export class Game extends Scene {
             slot.key_gfx.x = camera.centerX + Math.cos(off - 0.1) * 240;
             slot.key_gfx.y = camera.centerY + Math.sin(off - 0.1) * 240;
         }
-
-        const key_map = ["Q", "W", "E", "D", "S", "A"];
-        if (window?.URLSearchParams && window?.location?.search) {
-            for (let i = 0; i < key_map.length; i++) {
-                const parms = new URLSearchParams(window.location.search);
-                const key_txt = (i + 1).toString();
-                if (parms.has(key_txt)) {
-                    const phaser_key = parms.get(key_txt).toUpperCase();
-                    const code = KeyCodes[phaser_key];
-                    if (code) {
-                        console.log(
-                            "switching keys. Was:",
-                            key_map[i],
-                            "Now:",
-                            key_txt,
-                            phaser_key,
-                            code,
-                        );
-                        key_map[i] = phaser_key;
-                    }
-                }
-            }
-        }
-        this.keys = key_map.map((key_txt) =>
-            input.keyboard.addKey(KeyCodes[key_txt]),
-        );
-
-        const space = input.keyboard.addKey(KeyCodes.SPACE);
-        space.once("down", () => {
-            //            this.health = 2;
-        });
-
-        this.add.particles(0, 100, "drop", {
-            x: { min: 0, max: camera.width },
-            y: { min: -100, max: camera.height },
-            quantity: 1,
-            lifespan: 200,
-            tint: 0xffff00,
-            blendMode: Phaser.BlendModes.LIGHTER,
-            //gravityY: 200,
-            accelerationX: [-100, 100],
-            accelerationY: [-100, 100],
-            scale: 0.1,
-        });
-
-        const glass = this.add.image(camera.centerX, camera.centerY, "glass");
-        glass.setAlpha(0.14);
-
-        const helpbot = this.add.image(150, 400, "helpbot");
-        helpbot.setAlpha(0);
-        const helpmouse = this.add.image(870, 400, "helpmouse");
-        helpmouse.setAlpha(0);
-        helpmouse.setScale(0.8);
-        this.tweens.chain({
-            targets: helpbot,
-            onComplete: () => {
-                helpbot.destroy();
-            },
-            tweens: [
-                {
-                    alpha: 1,
-                    delay: 1000,
-                    duration: 1000,
-                },
-                {
-                    alpha: 0,
-                    delay: 3000,
-                    duration: 1000,
-                },
-            ],
-        });
-        this.tweens.chain({
-            targets: helpmouse,
-            onComplete: () => {
-                helpmouse.destroy();
-            },
-            tweens: [
-                {
-                    alpha: 1,
-                    delay: 9000,
-                    duration: 1000,
-                },
-                {
-                    alpha: 0,
-                    delay: 3000,
-                    duration: 1000,
-                },
-            ],
-        });
     }
 
     draw_score() {
@@ -424,6 +435,15 @@ export class Game extends Scene {
         this.camera.flash(100, 255, 0, 0);
     }
 
+    get_cell_target(src_x: number, src_y: number) {
+        const { camera } = this;
+        const target = new Phaser.Geom.Point(camera.centerX, camera.centerY);
+        const a = Phaser.Math.Angle.Between(src_x, src_y, target.x, target.y);
+        target.x -= Math.cos(a) * 200;
+        target.y -= Math.sin(a) * 200;
+        return target;
+    }
+
     update() {
         switch (this.state) {
             case game_state.PLAYING:
@@ -441,6 +461,7 @@ export class Game extends Scene {
     update_playing() {
         const { cells, camera, slots, bombs } = this;
 
+        // Update cells
         cells.forEach((c) => {
             if (c.update()) {
                 // Made it to the target
@@ -453,25 +474,10 @@ export class Game extends Scene {
 
         if (this.cell_spawn_timer-- <= 0) {
             // spawn a cell
-            const c = cells.find((c) => c.target == null);
-            if (c) {
-                c.visible = true;
-                const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
-                c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
-                c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
-                c.target = this.get_cell_target(c.x, c.y);
-                // Get faster each new cell
-                c.speed = this.cell_spawn_speed_base;
-                this.cell_spawn_speed_base += this.cell_spawn_speed_inc;
-            }
-            // Spawn faster each new cell
-            this.cell_spawn_timer = this.cell_spawn_rate;
-            this.cell_spawn_rate = Math.max(
-                this.cell_spawn_rate_fastest,
-                this.cell_spawn_rate + this.cell_spawn_rate_inc,
-            );
+            this.spawn_cell(cells, camera);
         }
 
+        // Update bombs
         bombs.forEach((b) => {
             if (!b.update()) {
                 // exlodey
@@ -493,8 +499,9 @@ export class Game extends Scene {
             }
         });
 
+        // Add new bombs
         const pointer = this.input.activePointer;
-        this.bomb_cooldown--; // = Math.max(0, this.cooldown--);
+        this.bomb_cooldown--;
         if (pointer.isDown && this.bomb_cooldown <= 0) {
             const dist = Phaser.Math.Distance.Between(
                 camera.centerX,
@@ -527,6 +534,8 @@ export class Game extends Scene {
             this.state = game_state.DEAD;
             this.state_time = 0;
         }
+
+        // Get redder as get dead-er
         camera.backgroundColor.red =
             this.health > 50 ? 0 : ((50 - this.health) / 50) * 40;
     }
@@ -547,6 +556,26 @@ export class Game extends Scene {
             cells_killed: this.cells_killed,
             cells_escaped: this.cells_escaped,
         });
+    }
+
+    spawn_cell(cells: Cell[], camera: Phaser.Cameras.Scene2D.Camera) {
+        const c = cells.find((c) => c.target == null);
+        if (c) {
+            c.visible = true;
+            const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
+            c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
+            c.target = this.get_cell_target(c.x, c.y);
+            // Get faster each new cell
+            c.speed = this.cell_spawn_speed_base;
+            this.cell_spawn_speed_base += this.cell_spawn_speed_inc;
+        }
+        // Spawn faster each new cell
+        this.cell_spawn_timer = this.cell_spawn_rate;
+        this.cell_spawn_rate = Math.max(
+            this.cell_spawn_rate_fastest,
+            this.cell_spawn_rate + this.cell_spawn_rate_inc,
+        );
     }
 
     handle_slot(m: Slot) {
