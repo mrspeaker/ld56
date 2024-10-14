@@ -37,7 +37,7 @@ export class Game extends Scene {
     state: game_state;
     state_time: number;
     slots: Slot[];
-    slot_gfx: Phaser.GameObjects.GameObject[];
+    slot_gfx: Phaser.GameObjects.Sprite[];
     cells: Cell[];
     bombs: Bomb[];
     bomb_group: Phaser.GameObjects.Group;
@@ -86,6 +86,7 @@ export class Game extends Scene {
     slot_spawn_chance_inc: number;
 
     slot_spawn_ai_chance: number; // between 0-1
+    slot_spawn_sploder_chance: number; // between 0-1
     slot_spawn_life: number;
     slot_spawn_life_min: number; // minum time on screen at fastest
     slot_spawn_life_deviation: number; // life +/- deviation
@@ -123,6 +124,7 @@ export class Game extends Scene {
         this.slot_spawn_life_inc = -0.01; // popup up for less and less time
 
         this.slot_spawn_ai_chance = 0.6;
+        this.slot_spawn_sploder_chance = 0.5;
 
         this.slots = [];
         this.slot_gfx = [];
@@ -172,11 +174,6 @@ export class Game extends Scene {
                 this.scene.start("MainMenu");
             }
         });
-
-        const cell_size = 180;
-        const cell_pad = 0;
-        const total_width = this.NUM_COLS * (cell_size + cell_pad) - cell_pad;
-        const total_height = this.NUM_ROWS * (cell_size + cell_pad) - cell_pad;
 
         this.bg = add.image(camera.centerX, camera.centerY, "background");
         this.bg.setAlpha(0.1);
@@ -236,7 +233,12 @@ export class Game extends Scene {
         cell_bg.setDepth(2);
         this.slot_gfx = this.add
             .group({ key: "blerb", frameQuantity: this.NUM_MOLES })
-            .getChildren();
+            .getChildren() as Phaser.GameObjects.Sprite[];
+
+        const cell_size = 180;
+        const cell_pad = 0;
+        const total_width = this.NUM_COLS * (cell_size + cell_pad) - cell_pad;
+        const total_height = this.NUM_ROWS * (cell_size + cell_pad) - cell_pad;
 
         const gap_x = (camera.width - total_width) / 2;
         const gap_y = (camera.height - total_height) / 2;
@@ -552,10 +554,10 @@ export class Game extends Scene {
 
         if (keys[m.idx].isDown) {
             m.key_gfx?.setTint(0xff8800);
-            m.seg_gfx.alpha = 1;
+            m.seg_gfx?.setAlpha(1);
         } else {
             m.key_gfx?.setTint(0xffffff);
-            m.seg_gfx.alpha = 0;
+            m.seg_gfx?.setAlpha(0);
         }
 
         switch (m.state) {
@@ -563,15 +565,9 @@ export class Game extends Scene {
                 if (m.timer-- <= 0) {
                     slot_gfx[m.idx].visible = true;
                     slot_gfx[m.idx].setAngle(Phaser.Math.FloatBetween(-20, 20));
-                    if (m.type == slot_type.AI_BOT) {
-                        slot_gfx[m.idx].play(
-                            ["bot1", "sidebot"][Phaser.Math.Between(0, 1)],
-                        );
-                    } else {
-                        slot_gfx[m.idx].play(
-                            ["bot1", "blerb", "blerb2"][m.type],
-                        );
-                    }
+                    slot_gfx[m.idx].play(
+                        ["bot1", "sidebot", "blerb", "blerb2", "goop"][m.type],
+                    );
                     m.state = slot_state.ALIVE;
                     m.timer = m.life;
                 }
@@ -662,12 +658,7 @@ export class Game extends Scene {
             const m = Phaser.Utils.Array.GetRandom(free_slots);
             m.state = slot_state.MOVING_IN;
             m.timer = 30;
-            m.type =
-                Phaser.Math.Between(0, 100) < this.slot_spawn_ai_chance * 100
-                    ? slot_type.AI_BOT
-                    : Phaser.Math.Between(0, 100) < 50
-                    ? slot_type.BLOB1
-                    : slot_type.BLOB2;
+
             // How long to show?
             m.life = Math.max(
                 this.slot_spawn_life_min,
@@ -677,6 +668,26 @@ export class Game extends Scene {
                         this.slot_spawn_life_deviation,
                     ),
             );
+
+            const is_sploder =
+                Phaser.Math.Between(0, 100) <
+                this.slot_spawn_sploder_chance * 100;
+            const is_bot =
+                Phaser.Math.Between(0, 100) < this.slot_spawn_ai_chance * 100;
+
+            if (is_sploder) {
+                m.type = slot_type.SPLODER;
+            } else if (is_bot) {
+                m.type =
+                    Phaser.Math.Between(0, 100) < 50
+                        ? slot_type.AI_BOT
+                        : slot_type.AI_BOT_SIDE;
+            } else {
+                m.type =
+                    Phaser.Math.Between(0, 100) < 50
+                        ? slot_type.BLOB1
+                        : slot_type.BLOB2;
+            }
         }
 
         // Update every frame

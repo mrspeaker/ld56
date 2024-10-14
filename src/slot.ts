@@ -1,7 +1,9 @@
 export enum slot_type {
     AI_BOT,
+    AI_BOT_SIDE,
     BLOB1,
     BLOB2,
+    SPLODER,
 }
 
 export enum slot_state {
@@ -21,6 +23,7 @@ export class Slot {
     idx: number;
     key_gfx: Phaser.GameObjects.Text | null;
     seg_gfx: Phaser.GameObjects.Graphics | null;
+
     constructor(idx: number) {
         this.state = slot_state.EMPTY;
         this.timer = 0;
@@ -29,6 +32,8 @@ export class Slot {
     }
 
     is_baddie() {
-        return this.type == slot_type.AI_BOT;
+        return (
+            this.type == slot_type.AI_BOT || this.type == slot_type.AI_BOT_SIDE
+        );
     }
 }

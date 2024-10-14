@@ -66,6 +66,10 @@ export class Preloader extends Scene {
             frameWidth: 128,
             frameHeight: 128,
         });
+        this.load.spritesheet("goop", "goop.png", {
+            frameWidth: 128,
+            frameHeight: 128,
+        });
     }
 
     create() {
@@ -127,6 +131,15 @@ export class Preloader extends Scene {
             frames: this.anims.generateFrameNumbers("meta"),
             frameRate: 30,
             repeat: -1,
+        });
+        this.anims.create({
+            key: "goop",
+            frames: this.anims.generateFrameNumbers("goop", {
+                start: 0,
+                end: 20,
+            }),
+            frameRate: 10,
+            repeat: 0,
         });
         this.scene.start("MainMenu");
     }
