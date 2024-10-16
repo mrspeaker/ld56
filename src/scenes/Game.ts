@@ -669,6 +669,12 @@ export class Game extends Scene {
             this.whacks_good++;
             this.slot_gfx[i].play("bot1_die");
             this.sfx.yell.play();
+        } else if (m.type == slot_type.SPLODER) {
+            console.log("Timer:", m.timer);
+            if (m.timer < 52 && m.timer > 10) {
+                // spawn clearer cells...
+                this.spawn_clearer(m.idx);
+            }
         } else {
             // brrrrp!
             this.health += HP_FRIENDLY_FIRE;
@@ -677,6 +683,11 @@ export class Game extends Scene {
             this.flash();
             this.sfx.ohno.play();
         }
+    }
+
+    spawn_clearer(slot_idx: number) {
+        // make a "clearer" pickup
+        console.log("add a clearer near slot", slot_idx);
     }
 
     spawn_slots() {

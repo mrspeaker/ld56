@@ -136,7 +136,7 @@ export class Preloader extends Scene {
             key: "goop",
             frames: this.anims.generateFrameNumbers("goop", {
                 start: 0,
-                end: 20,
+                end: 19,
             }),
             frameRate: 10,
             repeat: 0,
