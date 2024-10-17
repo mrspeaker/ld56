@@ -1,15 +1,15 @@
-import { Scene } from "phaser";
-import { Cell, BonusCell } from "../cell.ts";
 import { Bomb } from "../bomb.ts";
+import { Cell, BonusCell } from "../cell.ts";
+import { Scene } from "phaser";
 import { Slot, slot_state, slot_type } from "../slot.ts";
 import {
     FONT_FAMILY,
     FONT_PRIMARY_COLOR,
     FONT_PRIMARY_STROKE,
 } from "../font.ts";
+import { type stats, mk_stats } from "../stats.ts";
 
-const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
-
+// Game constants
 const SCORE_BOT_KILL = 100;
 const SCORE_CELL_KILL = 20;
 const SCORE_GOODY_SURVIVED = 8;
@@ -22,33 +22,28 @@ const BOMB_COOLDOWN = 15;
 const BOMB_CHARGE_TIME = 30;
 const BOMB_EXPLOSION_RADIUS = 80;
 
+const MAX_CELLS = 50;
+const MAX_BOMBS = 30;
+const RADIUS = 220;
+const NUM_SLOTS = 6;
+
+const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
+
 enum game_state {
     PLAYING,
     DEAD,
 }
 
 export class Game extends Scene {
-    camera: Phaser.Cameras.Scene2D.Camera;
-    msg_text: Phaser.GameObjects.Text;
-
     keys: Phaser.Input.Keyboard.Key[];
 
-    static MAX_CELLS = 50;
-    static MAX_BOMBS = 30;
-    static RADIUS = 220;
-    static NUM_SLOTS = 6;
-
-    state: game_state;
-    state_time: number;
-
-    slots: Slot[];
-    cells: Cell[];
-    bombs: Bomb[];
+    camera: Phaser.Cameras.Scene2D.Camera;
+    msg_text: Phaser.GameObjects.Text;
     bomb_group: Phaser.GameObjects.Group;
     bonus_group: Phaser.GameObjects.Group;
-
     score_text: Phaser.GameObjects.Text;
     hp_text: Phaser.GameObjects.Text;
+
     sfx: {
         theme: Phaser.Sound.BaseSound;
         laugh: Phaser.Sound.BaseSound;
@@ -61,19 +56,18 @@ export class Game extends Scene {
         happy: Phaser.Sound.BaseSound;
     };
 
-    last_flash: number;
+    state: game_state;
+    state_time: number;
 
-    score: number;
-    health: number;
+    slots: Slot[];
+    cells: Cell[];
+    bombs: Bomb[];
+
+    last_flash: number;
 
     bomb_cooldown: number; // bomb placement cooldown
 
-    whacks_good: number;
-    whacks_bad: number;
-    whacks_missed: number;
-
-    cells_killed: number;
-    cells_escaped: number;
+    stats: stats;
 
     cell_spawn_timer: number;
     cell_spawn_rate: number;
@@ -99,14 +93,8 @@ export class Game extends Scene {
 
     init() {
         this.state = game_state.PLAYING;
-        this.health = HP_INITIAL;
-        this.score = 0;
+        this.stats = mk_stats(HP_INITIAL);
         this.bomb_cooldown = 0;
-        this.whacks_good = 0;
-        this.whacks_bad = 0;
-        this.whacks_missed = 0;
-        this.cells_killed = 0;
-        this.cells_escaped = 0;
 
         this.cell_spawn_timer = 500; // initial delay
         this.cell_spawn_rate = 110; // spawn 1 every X ticks to start
@@ -125,7 +113,7 @@ export class Game extends Scene {
         this.slot_spawn_life_inc = -0.01; // popup up for less and less time
 
         this.slot_spawn_ai_chance = 0.6;
-        this.slot_spawn_sploder_chance = 0.05;
+        this.slot_spawn_sploder_chance = 0; // testing this idea
 
         this.slots = [];
         this.cells = [];
@@ -147,10 +135,10 @@ export class Game extends Scene {
     }
 
     create_camera() {
-        const camera = (this.camera = this.cameras.main);
+        this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x000000);
         this.camera.postFX.addVignette(0.5, 0.5, 0.9, 0.3);
-        return camera;
+        return this.camera;
     }
 
     create_sound() {
@@ -182,7 +170,8 @@ export class Game extends Scene {
             }
         });
 
-        // Handle key reconfigure
+        // Handle key reconfigure via query paramaters, lol
+        // eg `?1=a&2=b&...6=space` <- remappable to phaser keys
         const key_map = ["Q", "W", "E", "D", "S", "A"];
         if (window?.URLSearchParams && window?.location?.search) {
             for (let i = 0; i < key_map.length; i++) {
@@ -235,20 +224,8 @@ export class Game extends Scene {
         bg.setAlpha(0.1);
         bg.setDisplaySize(camera.width, camera.height);
         bg.postFX.addVignette(0.5, 0.5, 0.6);
-        this.add.circle(
-            camera.centerX,
-            camera.centerY,
-            Game.RADIUS,
-            0x000000,
-            0.8,
-        );
-        this.add.circle(
-            camera.centerX,
-            camera.centerY,
-            Game.RADIUS,
-            0x7dff7d,
-            0.1,
-        );
+        this.add.circle(camera.centerX, camera.centerY, RADIUS, 0x000000, 0.8);
+        this.add.circle(camera.centerX, camera.centerY, RADIUS, 0x7dff7d, 0.1);
     }
 
     create_fg(camera: Phaser.Cameras.Scene2D.Camera) {
@@ -320,7 +297,7 @@ export class Game extends Scene {
 
     create_playfield(camera: Phaser.Cameras.Scene2D.Camera) {
         const cell_group = this.add.group();
-        for (let i = 0; i < Game.MAX_CELLS; i++) {
+        for (let i = 0; i < MAX_CELLS; i++) {
             const cell = new Cell(this, 0, 0);
             cell.visible = false;
             cell.setScale(Phaser.Math.FloatBetween(0.3, 0.8));
@@ -329,7 +306,7 @@ export class Game extends Scene {
         }
 
         this.bomb_group = this.add.group();
-        for (let i = 0; i < Game.MAX_BOMBS; i++) {
+        for (let i = 0; i < MAX_BOMBS; i++) {
             const b = new Bomb(this, BOMB_CHARGE_TIME);
             this.bombs.push(b);
             this.bomb_group.add(b, true);
@@ -342,15 +319,15 @@ export class Game extends Scene {
         const cy = camera.centerY;
         const TAU = Math.PI * 2;
 
-        for (let i = 0; i < Game.NUM_SLOTS; i++) {
+        for (let i = 0; i < NUM_SLOTS; i++) {
             const slot = new Slot(i);
             this.slots.push(slot);
 
             // Angle (starting from top left slot)
-            const a = (i / Game.NUM_SLOTS) * TAU - Phaser.Math.DegToRad(145);
+            const a = (i / NUM_SLOTS) * TAU - Phaser.Math.DegToRad(145);
 
             // Position the gfx pos for each slot (where character will appear)
-            const char_rad = Game.RADIUS - 60;
+            const char_rad = RADIUS - 60;
             slot.char_gfx = this.add.sprite(
                 Math.cos(a) * char_rad + cx,
                 Math.sin(a) * char_rad + cy,
@@ -359,7 +336,7 @@ export class Game extends Scene {
             slot.char_gfx.visible = false;
 
             // Graphics for the key letter around circle
-            const key_rad = Game.RADIUS + 20;
+            const key_rad = RADIUS + 20;
             slot.key_gfx = this.add.text(
                 Math.cos(a - 0.1) * key_rad + cx,
                 Math.sin(a - 0.1) * key_rad + cy,
@@ -375,8 +352,8 @@ export class Game extends Scene {
             const arc = this.add.graphics();
             arc.lineStyle(4, 0x7dff7d, 0.4);
             arc.beginPath();
-            const start = Math.PI + (i / Game.NUM_SLOTS) * TAU;
-            arc.arc(cx, cy, Game.RADIUS, start, start + TAU / Game.NUM_SLOTS);
+            const start = Math.PI + (i / NUM_SLOTS) * TAU;
+            arc.arc(cx, cy, RADIUS, start, start + TAU / NUM_SLOTS);
             arc.strokePath();
             arc.alpha = 0;
             slot.seg_gfx = arc;
@@ -384,7 +361,8 @@ export class Game extends Scene {
     }
 
     draw_score() {
-        const { score, score_text, health, hp_text } = this;
+        const { score_text, hp_text, stats } = this;
+        const { score, health } = stats;
         const anim = (scene: Phaser.Scene, target: any) => {
             const boop = scene.tweens.getTweensOf(target);
             if (!boop.length) {
@@ -425,8 +403,8 @@ export class Game extends Scene {
         const { camera } = this;
         const target = new Phaser.Geom.Point(camera.centerX, camera.centerY);
         const a = Phaser.Math.Angle.Between(src_x, src_y, target.x, target.y);
-        target.x -= Math.cos(a) * (Game.RADIUS - 20);
-        target.y -= Math.sin(a) * (Game.RADIUS - 20);
+        target.x -= Math.cos(a) * (RADIUS - 20);
+        target.y -= Math.sin(a) * (RADIUS - 20);
         return target;
     }
 
@@ -445,15 +423,15 @@ export class Game extends Scene {
     }
 
     update_playing() {
-        const { bonus_group, cells, camera, slots, bombs } = this;
+        const { bonus_group, bombs, camera, cells, slots, stats } = this;
 
         // Update cells
         cells.forEach((c) => {
             if (c.update()) {
                 // Made it to the target
-                this.health += HP_CELL_ESCAPED;
+                stats.health += HP_CELL_ESCAPED;
+                stats.cells_escaped++;
                 this.sfx.exp.play();
-                this.cells_escaped++;
                 c.visible = false;
             }
         });
@@ -479,9 +457,9 @@ export class Game extends Scene {
                     const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
                     if (d < BOMB_EXPLOSION_RADIUS) {
                         c.remove();
-                        this.score += SCORE_CELL_KILL;
+                        stats.score += SCORE_CELL_KILL;
+                        stats.cells_killed++;
                         this.sfx.exp2.play();
-                        this.cells_killed++;
                     }
                 });
                 // And trigger any nearby bonuses too.
@@ -513,7 +491,7 @@ export class Game extends Scene {
                 pointer.position.x,
                 pointer.position.y,
             );
-            if (dist >= Game.RADIUS * 0.85) {
+            if (dist >= RADIUS * 0.85) {
                 // Drop a bomba!
                 this.bomb_cooldown = BOMB_COOLDOWN;
                 this.sfx.splode.play();
@@ -531,9 +509,9 @@ export class Game extends Scene {
         this.spawn_slots();
 
         // HP
-        if (this.health > 100) this.health = 100;
-        if (this.health <= 0) {
-            this.health = 0;
+        if (stats.health > 100) stats.health = 100;
+        if (stats.health <= 0) {
+            stats.health = 0;
             this.sfx.theme.stop();
             this.state = game_state.DEAD;
             this.state_time = 0;
@@ -541,7 +519,7 @@ export class Game extends Scene {
 
         // Get redder as get dead-er
         camera.backgroundColor.red =
-            this.health > 50 ? 0 : ((50 - this.health) / 50) * 40;
+            stats.health > 50 ? 0 : ((50 - stats.health) / 50) * 40;
     }
 
     update_dead() {
@@ -552,22 +530,16 @@ export class Game extends Scene {
         if (this.state_time++ < 100) {
             return;
         }
-        this.scene.start("GameOver", {
-            score: this.score,
-            whacks_good: this.whacks_good,
-            whacks_bad: this.whacks_bad,
-            whacks_missed: this.whacks_missed,
-            cells_killed: this.cells_killed,
-            cells_escaped: this.cells_escaped,
-        });
+        this.scene.start("GameOver", this.stats);
     }
 
     bonus_explode_all_cells() {
+        const { stats } = this;
         // Destroy the entire cell wave
         this.cells.forEach((c) => {
             if (!c.visible) return;
-            this.score += SCORE_CELL_KILL;
-            this.cells_killed++;
+            stats.score += SCORE_CELL_KILL;
+            stats.cells_killed++;
             c.remove();
         });
     }
@@ -593,7 +565,7 @@ export class Game extends Scene {
     }
 
     handle_slot(m: Slot) {
-        const { keys } = this;
+        const { keys, stats } = this;
 
         if (keys[m.idx].isDown) {
             m.key_gfx?.setTint(0xff8800);
@@ -624,13 +596,13 @@ export class Game extends Scene {
                 if (m.timer-- <= 0) {
                     m.state = slot_state.MISSED;
                     if (m.is_baddie()) {
-                        this.whacks_missed++;
-                        this.health += HP_BOT_MISSED;
+                        stats.whacks_missed++;
+                        stats.health += HP_BOT_MISSED;
                         this.flash();
                         this.sfx.laugh.play();
                     } else {
+                        stats.score += SCORE_GOODY_SURVIVED;
                         this.sfx.happy.play();
-                        this.score += SCORE_GOODY_SURVIVED;
                         this.tweens.add({
                             targets: m.char_gfx,
                             alpha: 0,
@@ -662,7 +634,7 @@ export class Game extends Scene {
     }
 
     handle_whack(m: Slot) {
-        const { camera } = this;
+        const { camera, stats } = this;
 
         m.state = slot_state.WHACKED;
 
@@ -678,10 +650,11 @@ export class Game extends Scene {
 
         if (m.is_baddie()) {
             // score!
-            this.score += SCORE_BOT_KILL;
-            this.health += HP_BOT_KILL;
-            this.whacks_good++;
+            stats.score += SCORE_BOT_KILL;
+            stats.health += HP_BOT_KILL;
+            stats.whacks_good++;
             m.char_gfx?.play("bot1_die");
+
             this.sfx.yell.play();
         } else if (m.type == slot_type.SPLODER) {
             console.log("Timer:", m.timer);
@@ -691,8 +664,8 @@ export class Game extends Scene {
             }
         } else {
             // brrrrp!
-            this.health += HP_FRIENDLY_FIRE;
-            this.whacks_bad++;
+            stats.health += HP_FRIENDLY_FIRE;
+            stats.whacks_bad++;
             m.char_gfx?.setVisible(false);
             this.flash();
             this.sfx.ohno.play();

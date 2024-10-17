@@ -1,14 +1,6 @@
 import { Scene } from "phaser";
 import { FONT_FAMILY, FONT_PRIMARY_COLOR } from "../font.ts";
-
-type gameover_data = {
-    score: number;
-    whacks_good: number;
-    whacks_bad: number;
-    whacks_missed: number;
-    cells_killed: number;
-    cells_escaped: number;
-};
+import type { stats } from "../stats.ts";
 
 export class GameOver extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
@@ -16,14 +8,14 @@ export class GameOver extends Scene {
     gameover_text: Phaser.GameObjects.Text;
     stats_text: Phaser.GameObjects.Text;
 
-    stats: gameover_data;
+    stats: stats;
     cooldown: number;
 
     constructor() {
         super("GameOver");
     }
 
-    init(data: gameover_data) {
+    init(data: stats) {
         this.stats = data;
         this.cooldown = 100;
     }

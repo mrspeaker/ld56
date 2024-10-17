@@ -10,7 +10,7 @@ export class MainMenu extends Scene {
     }
 
     create() {
-        this.input.setDefaultCursor("url(assets/syr.png), pointer");
+        const { input } = this;
 
         this.add.image(100, 180, "bad");
         this.add.sprite(70, 280, "bot1").play("bot1");
@@ -21,16 +21,16 @@ export class MainMenu extends Scene {
         this.add.sprite(980, 530, "blerb2").play("blerb2");
 
         const g = this.add.image(500, 400, "glass");
-        this.add.image(512, 400, "logo");
         g.setAlpha(0.2);
+        this.add.image(512, 400, "logo");
 
         this.add.image(120, 620, "keymouse");
 
-        this.input.once("pointerdown", () => {
+        input.setDefaultCursor("url(assets/syr.png), pointer");
+        input.once("pointerdown", () => {
             this.scene.start("Game");
         });
-
-        this.input.keyboard
+        input.keyboard
             ?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
             .once("down", () => {
                 this.scene.start("Game");
