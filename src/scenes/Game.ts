@@ -9,6 +9,7 @@ import {
 } from "../font.ts";
 import { type stats, mk_stats } from "../stats.ts";
 import { CellSpawner } from "../cell_spawner.ts";
+import { SlotSpawner } from "../slot_spawner.ts";
 
 // Game constants
 const SCORE_BOT_KILL = 100;
@@ -69,18 +70,8 @@ export class Game extends Scene {
 
     stats: stats;
 
-    cell_spawn: CellSpawner;
-
-    slot_spawn_chance: number;
-    slot_spawn_chance_max: number;
-    slot_spawn_chance_inc: number;
-
-    slot_spawn_ai_chance: number; // between 0-1
-    slot_spawn_sploder_chance: number; // between 0-1
-    slot_spawn_life: number;
-    slot_spawn_life_min: number; // minimum time on screen at fastest
-    slot_spawn_life_deviation: number; // life +/- deviation
-    slot_spawn_life_inc: number; // popup up for less and less time
+    slot_spawner: SlotSpawner;
+    cell_spawner: CellSpawner;
 
     constructor() {
         super("Game");
@@ -91,19 +82,8 @@ export class Game extends Scene {
         this.stats = mk_stats(HP_INITIAL);
         this.bomb_cooldown = 0;
 
-        this.cell_spawn = new CellSpawner(this.spawn_cell.bind(this));
-
-        this.slot_spawn_chance = 0.08;
-        this.slot_spawn_chance_max = 10;
-        this.slot_spawn_chance_inc = 0.00005;
-
-        this.slot_spawn_life_min = 40;
-        this.slot_spawn_life = 100;
-        this.slot_spawn_life_deviation = 15; // life +/- deviation
-        this.slot_spawn_life_inc = -0.01; // popup up for less and less time
-
-        this.slot_spawn_ai_chance = 0.6;
-        this.slot_spawn_sploder_chance = 0.1; // testing this idea
+        this.slot_spawner = new SlotSpawner();
+        this.cell_spawner = new CellSpawner(this.spawn_cell.bind(this));
 
         this.slots = [];
         this.cells = [];
@@ -310,7 +290,7 @@ export class Game extends Scene {
         const TAU = Math.PI * 2;
 
         for (let i = 0; i < NUM_SLOTS; i++) {
-            const slot = new Slot(i);
+            const slot = new Slot(i, this.on_missed_slot.bind(this));
             this.slots.push(slot);
 
             // Angle (starting from top left slot)
@@ -415,6 +395,14 @@ export class Game extends Scene {
     update_playing() {
         const { bonus_group, bombs, camera, cells, slots, stats } = this;
 
+        // Update slots
+        slots.forEach((m) => this.update_slot(m));
+
+        // Spawn any new slots
+        if (this.slot_spawner.update()) {
+            this.spawn_slot();
+        }
+
         // Update cells
         cells.forEach((c) => {
             if (c.update()) {
@@ -426,7 +414,10 @@ export class Game extends Scene {
             }
         });
 
-        this.cell_spawn.update();
+        // Spawn any new cells
+        this.cell_spawner.update();
+
+        // Bombs and bonuses
 
         const bonuses = bonus_group.getChildren().map((c) => c as BonusCell);
 
@@ -459,15 +450,6 @@ export class Game extends Scene {
             }
         });
 
-        bonuses.forEach((b) => {
-            if (b.update()) {
-                // triggered: do bonus!
-                this.sfx.exp.play();
-                b.destroy();
-                this.explode_all_cells();
-            }
-        });
-
         // Add new bombs
         const pointer = this.input.activePointer;
         this.bomb_cooldown--;
@@ -489,11 +471,15 @@ export class Game extends Scene {
             }
         }
 
-        // Update slots
-        slots.forEach((m) => this.handle_slot(m));
-
-        // Spawn any new slots
-        this.spawn_slots();
+        // Update bonuses
+        bonuses.forEach((b) => {
+            if (b.update()) {
+                // triggered: do bonus!
+                this.sfx.exp.play();
+                b.destroy();
+                this.explode_all_cells();
+            }
+        });
 
         // HP
         if (stats.health > 100) stats.health = 100;
@@ -544,72 +530,30 @@ export class Game extends Scene {
         }
     }
 
-    handle_slot(m: Slot) {
-        const { keys, stats } = this;
-
-        if (keys[m.idx].isDown) {
-            m.key_gfx?.setTint(0xff8800);
-            m.seg_gfx?.setAlpha(1);
-        } else {
-            m.key_gfx?.setTint(0xffffff);
-            m.seg_gfx?.setAlpha(0);
+    update_slot(m: Slot) {
+        const is_press = this.keys[m.idx].isDown;
+        const is_alive = m.state == slot_state.ALIVE;
+        if (is_press && is_alive) {
+            this.handle_whack(m);
         }
+        m.update(is_press);
+    }
 
-        switch (m.state) {
-            case slot_state.MOVING_IN:
-                if (m.timer-- <= 0) {
-                    m.char_gfx?.setVisible(true);
-                    m.char_gfx?.setAngle(Phaser.Math.FloatBetween(-20, 20));
-                    m.char_gfx?.play(
-                        ["bot1", "sidebot", "blerb", "blerb2", "goop"][m.type],
-                    );
-                    m.state = slot_state.ALIVE;
-                    m.timer = m.life;
-                }
-                break;
-            case slot_state.ALIVE:
-                if (keys[m.idx].isDown) {
-                    this.handle_whack(m);
-                }
-
-                // Slot timer
-                if (m.timer-- <= 0) {
-                    m.state = slot_state.MISSED;
-                    if (m.is_baddie()) {
-                        stats.whacks_missed++;
-                        stats.health += HP_BOT_MISSED;
-                        this.flash();
-                        this.sfx.laugh.play();
-                    } else {
-                        stats.score += SCORE_GOODY_SURVIVED;
-                        this.sfx.happy.play();
-                        this.tweens.add({
-                            targets: m.char_gfx,
-                            alpha: 0,
-                            duration: 250,
-                        });
-                    }
-                }
-                break;
-            case slot_state.WHACKED:
-                m.state = slot_state.MOVING_OUT;
-                m.timer = 25;
-                break;
-            case slot_state.MISSED:
-                m.char_gfx?.setFlipY(true);
-                m.state = slot_state.MOVING_OUT;
-                m.timer = 25;
-                break;
-            case slot_state.MOVING_OUT:
-                if (m.timer-- <= 0) {
-                    m.state = slot_state.EMPTY;
-                    m.char_gfx?.setVisible(false);
-                    m.char_gfx?.setFlipY(false);
-                    m.char_gfx?.setAlpha(1);
-                }
-                break;
-            default:
-                break;
+    on_missed_slot(idx: number, is_bot: boolean) {
+        const { slots, stats } = this;
+        if (is_bot) {
+            stats.whacks_missed++;
+            stats.health += HP_BOT_MISSED;
+            this.flash();
+            this.sfx.laugh.play();
+        } else {
+            stats.score += SCORE_GOODY_SURVIVED;
+            this.sfx.happy.play();
+            this.tweens.add({
+                targets: slots[idx].char_gfx,
+                alpha: 0,
+                duration: 250,
+            });
         }
     }
 
@@ -663,25 +607,8 @@ export class Game extends Scene {
         this.bonus_group.add(c, true);
     }
 
-    spawn_slots() {
-        const { slots } = this;
-
-        // Update every frame
-        this.slot_spawn_chance = Math.min(
-            this.slot_spawn_chance_max,
-            this.slot_spawn_chance + this.slot_spawn_chance_inc,
-        );
-
-        // Get faster each time
-        this.slot_spawn_life = Math.max(
-            this.slot_spawn_life_min,
-            this.slot_spawn_life + this.slot_spawn_life_inc,
-        );
-
-        // Spawn someone?
-        if (!(Phaser.Math.Between(0, 1000) < this.slot_spawn_chance * 100)) {
-            return;
-        }
+    spawn_slot() {
+        const { slots, slot_spawner } = this;
 
         const free_slots = slots.filter((s) => s.state == slot_state.EMPTY);
         if (free_slots.length == 0) return;
@@ -689,34 +616,7 @@ export class Game extends Scene {
         const m = Phaser.Utils.Array.GetRandom(free_slots);
         m.state = slot_state.MOVING_IN;
         m.timer = 30;
-
-        // How long to show?
-        m.life = Math.max(
-            this.slot_spawn_life_min,
-            this.slot_spawn_life +
-                Phaser.Math.Between(
-                    -this.slot_spawn_life_deviation,
-                    this.slot_spawn_life_deviation,
-                ),
-        );
-
-        const is_sploder =
-            Phaser.Math.Between(0, 100) < this.slot_spawn_sploder_chance * 100;
-        const is_bot =
-            Phaser.Math.Between(0, 100) < this.slot_spawn_ai_chance * 100;
-
-        if (is_sploder) {
-            m.type = slot_type.SPLODER;
-        } else if (is_bot) {
-            m.type =
-                Phaser.Math.Between(0, 100) < 50
-                    ? slot_type.AI_BOT
-                    : slot_type.AI_BOT_SIDE;
-        } else {
-            m.type =
-                Phaser.Math.Between(0, 100) < 50
-                    ? slot_type.BLOB1
-                    : slot_type.BLOB2;
-        }
+        m.life = slot_spawner.get_life();
+        m.type = slot_spawner.get_type();
     }
 }
