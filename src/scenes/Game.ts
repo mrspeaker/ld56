@@ -45,8 +45,8 @@ export class Game extends Scene {
 
     score_text: Phaser.GameObjects.Text;
     hp_text: Phaser.GameObjects.Text;
-    theme: Phaser.Sound.BaseSound;
     sfx: {
+        theme: Phaser.Sound.BaseSound;
         laugh: Phaser.Sound.BaseSound;
         ohno: Phaser.Sound.BaseSound;
         punch: Phaser.Sound.BaseSound;
@@ -173,7 +173,7 @@ export class Game extends Scene {
         // Dodgy handle escape
         input.keyboard?.addKey(KeyCodes.ESC).on("down", () => {
             if (confirm("Quit?")) {
-                this.theme?.stop();
+                this.sfx.theme.stop();
                 this.scene.start("MainMenu");
             }
         });
@@ -194,7 +194,7 @@ export class Game extends Scene {
                             "Now:",
                             key_txt,
                             phaser_key,
-                            code
+                            code,
                         );
                         key_map[i] = phaser_key;
                     }
@@ -205,7 +205,7 @@ export class Game extends Scene {
         if (!input.keyboard) return;
 
         this.keys = key_map.map((key_txt) =>
-            input.keyboard.addKey(KeyCodes[key_txt])
+            input.keyboard.addKey(KeyCodes[key_txt]),
         );
     }
 
@@ -236,14 +236,14 @@ export class Game extends Scene {
             camera.centerY,
             Game.RADIUS,
             0x000000,
-            0.8
+            0.8,
         );
         this.add.circle(
             camera.centerX,
             camera.centerY,
             Game.RADIUS,
             0x7dff7d,
-            0.1
+            0.1,
         );
     }
 
@@ -363,7 +363,7 @@ export class Game extends Scene {
                     fontFamily: FONT_FAMILY,
                     fontSize: 18,
                     color: "#ffffff",
-                }
+                },
             );
 
             // Segment arc around circle
@@ -506,7 +506,7 @@ export class Game extends Scene {
                 camera.centerX,
                 camera.centerY,
                 pointer.position.x,
-                pointer.position.y
+                pointer.position.y,
             );
             if (dist >= Game.RADIUS * 0.85) {
                 // Drop a bomba!
@@ -529,7 +529,7 @@ export class Game extends Scene {
         if (this.health > 100) this.health = 100;
         if (this.health <= 0) {
             this.health = 0;
-            this.theme.stop();
+            this.sfx.theme.stop();
             this.state = game_state.DEAD;
             this.state_time = 0;
         }
@@ -583,7 +583,7 @@ export class Game extends Scene {
         this.cell_spawn_timer = this.cell_spawn_rate;
         this.cell_spawn_rate = Math.max(
             this.cell_spawn_rate_fastest,
-            this.cell_spawn_rate + this.cell_spawn_rate_inc
+            this.cell_spawn_rate + this.cell_spawn_rate_inc,
         );
     }
 
@@ -604,7 +604,7 @@ export class Game extends Scene {
                     m.char_gfx.visible = true;
                     m.char_gfx.setAngle(Phaser.Math.FloatBetween(-20, 20));
                     m.char_gfx.play(
-                        ["bot1", "sidebot", "blerb", "blerb2", "goop"][m.type]
+                        ["bot1", "sidebot", "blerb", "blerb2", "goop"][m.type],
                     );
                     m.state = slot_state.ALIVE;
                     m.timer = m.life;
@@ -710,13 +710,13 @@ export class Game extends Scene {
         // Update every frame
         this.slot_spawn_chance = Math.min(
             this.slot_spawn_chance_max,
-            this.slot_spawn_chance + this.slot_spawn_chance_inc
+            this.slot_spawn_chance + this.slot_spawn_chance_inc,
         );
 
         // Get faster each time
         this.slot_spawn_life = Math.max(
             this.slot_spawn_life_min,
-            this.slot_spawn_life + this.slot_spawn_life_inc
+            this.slot_spawn_life + this.slot_spawn_life_inc,
         );
 
         // Spawn someone?
@@ -737,8 +737,8 @@ export class Game extends Scene {
             this.slot_spawn_life +
                 Phaser.Math.Between(
                     -this.slot_spawn_life_deviation,
-                    this.slot_spawn_life_deviation
-                )
+                    this.slot_spawn_life_deviation,
+                ),
         );
 
         const is_sploder =
