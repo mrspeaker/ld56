@@ -14,7 +14,6 @@ export class Preloader extends Scene {
     }
 
     preload() {
-        //  Load the assets for the game - Replace with your own assets
         this.load.setPath("assets");
 
         this.load.image("logo", "logo.png");
@@ -141,6 +140,7 @@ export class Preloader extends Scene {
             frameRate: 10,
             repeat: 0,
         });
+
         this.scene.start("MainMenu");
     }
 }

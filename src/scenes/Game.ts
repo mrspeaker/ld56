@@ -2,7 +2,11 @@ import { Scene } from "phaser";
 import { Cell, BonusCell } from "../cell.ts";
 import { Bomb } from "../bomb.ts";
 import { Slot, slot_state, slot_type } from "../slot.ts";
-import { FONT_FAMILY } from "../font.ts";
+import {
+    FONT_FAMILY,
+    FONT_PRIMARY_COLOR,
+    FONT_PRIMARY_STROKE,
+} from "../font.ts";
 
 const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
@@ -213,8 +217,8 @@ export class Game extends Scene {
         const font = {
             fontFamily: FONT_FAMILY,
             fontSize: 38,
-            color: "#ffffff",
-            stroke: "#000000",
+            color: FONT_PRIMARY_COLOR,
+            stroke: FONT_PRIMARY_STROKE,
             strokeThickness: 8,
             align: "right",
         };
@@ -346,12 +350,13 @@ export class Game extends Scene {
             const a = (i / Game.NUM_SLOTS) * TAU - Phaser.Math.DegToRad(145);
 
             // Position the gfx pos for each slot (where character will appear)
-            const char_gfx = this.add.sprite("blerb");
             const char_rad = Game.RADIUS - 60;
-            char_gfx.x = Math.cos(a) * char_rad + cx;
-            char_gfx.y = Math.sin(a) * char_rad + cy;
-            char_gfx.visible = false;
-            slot.char_gfx = char_gfx;
+            slot.char_gfx = this.add.sprite(
+                Math.cos(a) * char_rad + cx,
+                Math.sin(a) * char_rad + cy,
+                "blerb",
+            );
+            slot.char_gfx.visible = false;
 
             // Graphics for the key letter around circle
             const key_rad = Game.RADIUS + 20;
@@ -362,7 +367,7 @@ export class Game extends Scene {
                 {
                     fontFamily: FONT_FAMILY,
                     fontSize: 18,
-                    color: "#ffffff",
+                    color: FONT_PRIMARY_COLOR,
                 },
             );
 
@@ -514,7 +519,7 @@ export class Game extends Scene {
                 this.sfx.splode.play();
                 const b = this.bombs.find((b) => b.explode());
                 if (b) {
-                    b.ignite(pointer.position.x, pointer.position.y, this);
+                    b.ignite(pointer.position.x, pointer.position.y);
                 }
             }
         }
@@ -601,9 +606,9 @@ export class Game extends Scene {
         switch (m.state) {
             case slot_state.MOVING_IN:
                 if (m.timer-- <= 0) {
-                    m.char_gfx.visible = true;
-                    m.char_gfx.setAngle(Phaser.Math.FloatBetween(-20, 20));
-                    m.char_gfx.play(
+                    m.char_gfx?.setVisible(true);
+                    m.char_gfx?.setAngle(Phaser.Math.FloatBetween(-20, 20));
+                    m.char_gfx?.play(
                         ["bot1", "sidebot", "blerb", "blerb2", "goop"][m.type],
                     );
                     m.state = slot_state.ALIVE;
@@ -612,10 +617,10 @@ export class Game extends Scene {
                 break;
             case slot_state.ALIVE:
                 if (keys[m.idx].isDown) {
-                    this.handle_whack(m, m.idx);
+                    this.handle_whack(m);
                 }
 
-                // Handle timer
+                // Slot timer
                 if (m.timer-- <= 0) {
                     m.state = slot_state.MISSED;
                     if (m.is_baddie()) {
@@ -639,16 +644,16 @@ export class Game extends Scene {
                 m.timer = 25;
                 break;
             case slot_state.MISSED:
-                m.char_gfx.flipY = true;
+                m.char_gfx?.setFlipY(true);
                 m.state = slot_state.MOVING_OUT;
                 m.timer = 25;
                 break;
             case slot_state.MOVING_OUT:
                 if (m.timer-- <= 0) {
                     m.state = slot_state.EMPTY;
-                    m.char_gfx.visible = false;
-                    m.char_gfx.flipY = false;
-                    m.char_gfx.alpha = 1;
+                    m.char_gfx?.setVisible(false);
+                    m.char_gfx?.setFlipY(false);
+                    m.char_gfx?.setAlpha(1);
                 }
                 break;
             default:
@@ -656,13 +661,13 @@ export class Game extends Scene {
         }
     }
 
-    handle_whack(m: Slot, i: number) {
+    handle_whack(m: Slot) {
         const { camera } = this;
 
         m.state = slot_state.WHACKED;
 
         const hit_gfx = this.add
-            .sprite(m.char_gfx.x, m.char_gfx.y, "hit")
+            .sprite(m.char_gfx?.x ?? 0, m.char_gfx?.y ?? 0, "hit")
             .play("hit", false)
             .once("animationcomplete", () => {
                 hit_gfx.destroy();
@@ -676,7 +681,7 @@ export class Game extends Scene {
             this.score += SCORE_BOT_KILL;
             this.health += HP_BOT_KILL;
             this.whacks_good++;
-            m.char_gfx.play("bot1_die");
+            m.char_gfx?.play("bot1_die");
             this.sfx.yell.play();
         } else if (m.type == slot_type.SPLODER) {
             console.log("Timer:", m.timer);
@@ -688,7 +693,7 @@ export class Game extends Scene {
             // brrrrp!
             this.health += HP_FRIENDLY_FIRE;
             this.whacks_bad++;
-            m.char_gfx.visible = false;
+            m.char_gfx?.setVisible(false);
             this.flash();
             this.sfx.ohno.play();
         }

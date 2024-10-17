@@ -1,32 +1,30 @@
 import { Scene } from "phaser";
-import { FONT_FAMILY } from "../font.ts";
+import { FONT_FAMILY, FONT_PRIMARY_COLOR } from "../font.ts";
 
-export class GameOver extends Scene {
-    camera: Phaser.Cameras.Scene2D.Camera;
-    background: Phaser.GameObjects.Image;
-    gameover_text: Phaser.GameObjects.Text;
-    stats: Phaser.GameObjects.Text;
-
+type gameover_data = {
     score: number;
     whacks_good: number;
     whacks_bad: number;
     whacks_missed: number;
     cells_killed: number;
     cells_escaped: number;
+};
 
+export class GameOver extends Scene {
+    camera: Phaser.Cameras.Scene2D.Camera;
+    background: Phaser.GameObjects.Image;
+    gameover_text: Phaser.GameObjects.Text;
+    stats_text: Phaser.GameObjects.Text;
+
+    stats: gameover_data;
     cooldown: number;
 
     constructor() {
         super("GameOver");
     }
 
-    init(data) {
-        this.score = data.score;
-        this.whacks_good = data.whacks_good;
-        this.whacks_bad = data.whacks_bad;
-        this.whacks_missed = data.whacks_missed;
-        this.cells_killed = data.cells_killed;
-        this.cells_escaped = data.cells_escaped;
+    init(data: gameover_data) {
+        this.stats = data;
         this.cooldown = 100;
     }
 
@@ -35,8 +33,17 @@ export class GameOver extends Scene {
     }
 
     create() {
-        this.camera = this.cameras.main;
-        this.camera.setBackgroundColor(0x000000);
+        const { cameras, stats } = this;
+        const {
+            score,
+            whacks_good,
+            whacks_bad,
+            whacks_missed,
+            cells_killed,
+            cells_escaped,
+        } = stats;
+
+        cameras.main.setBackgroundColor(0x000000);
 
         this.sound.add("yell", { volume: 1 }).play();
 
@@ -45,12 +52,12 @@ export class GameOver extends Scene {
         const font = {
             fontFamily: FONT_FAMILY,
             fontSize: 64,
-            color: "#ffffff",
+            color: FONT_PRIMARY_COLOR,
             align: "center",
         };
 
         this.gameover_text = this.add
-            .text(512, 398, this.score.toFixed(0), font)
+            .text(512, 398, score.toFixed(0), font)
             .setOrigin(0.5);
         this.tweens.add({
             targets: this.gameover_text,
@@ -63,18 +70,18 @@ export class GameOver extends Scene {
 
         this.gameover_text.setOrigin(0.5);
 
-        const total_whacks = Math.max(1, this.whacks_good + this.whacks_missed);
-        const total_cells = Math.max(1, this.cells_killed + this.cells_escaped);
-        const perc = this.whacks_good / total_whacks;
-        const perc_cells = this.cells_killed / total_cells;
+        const total_whacks = Math.max(1, whacks_good + whacks_missed);
+        const total_cells = Math.max(1, cells_killed + cells_escaped);
+        const perc = whacks_good / total_whacks;
+        const perc_cells = cells_killed / total_cells;
 
-        this.stats = this.add.text(
-            750,
-            400,
+        this.stats_text = this.add.text(
+            700,
+            370,
             `bots destroyed: ${Math.round(perc * 100)}%
 cells destroyed: ${Math.round(perc_cells * 100)}%
-good guys killed: ${this.whacks_bad}`,
-            { ...font, fontSize: 24 },
+good guys killed: ${whacks_bad}`,
+            { ...font, fontSize: 20 },
         );
 
         this.input.on("pointerdown", () => {
