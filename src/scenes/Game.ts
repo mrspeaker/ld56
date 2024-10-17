@@ -36,7 +36,6 @@ export class Game extends Scene {
     state: game_state;
     state_time: number;
     slots: Slot[];
-    slot_gfx: Phaser.GameObjects.Sprite[];
     cells: Cell[];
     bombs: Bomb[];
     bomb_group: Phaser.GameObjects.Group;
@@ -127,7 +126,6 @@ export class Game extends Scene {
         this.slot_spawn_sploder_chance = 0.05;
 
         this.slots = [];
-        this.slot_gfx = [];
         this.cells = [];
         this.bombs = [];
 
@@ -199,7 +197,7 @@ export class Game extends Scene {
                             "Now:",
                             key_txt,
                             phaser_key,
-                            code,
+                            code
                         );
                         key_map[i] = phaser_key;
                     }
@@ -210,7 +208,7 @@ export class Game extends Scene {
         if (!input.keyboard) return;
 
         this.keys = key_map.map((key_txt) =>
-            input.keyboard.addKey(KeyCodes[key_txt]),
+            input.keyboard.addKey(KeyCodes[key_txt])
         );
     }
 
@@ -241,14 +239,14 @@ export class Game extends Scene {
             camera.centerY,
             Game.RADIUS,
             0x000000,
-            0.8,
+            0.8
         );
         this.add.circle(
             camera.centerX,
             camera.centerY,
             Game.RADIUS,
             0x7dff7d,
-            0.1,
+            0.1
         );
     }
 
@@ -331,71 +329,51 @@ export class Game extends Scene {
             this.bombs.push(b);
             this.bomb_group.add(b, true);
         }
-        this.bonus_cells = this.add.group();
 
-        this.slot_gfx = this.add
-            .group({ key: "blerb", frameQuantity: this.NUM_MOLES })
-            .getChildren() as Phaser.GameObjects.Sprite[];
+        this.bonus_group = this.add.group();
 
-        const cell_size = 180;
-        const cell_pad = 0;
-        const total_width = this.NUM_COLS * (cell_size + cell_pad) - cell_pad;
-        const total_height = this.NUM_ROWS * (cell_size + cell_pad) - cell_pad;
+        // Circular playfield: keys and slots graphics
+        const cx = camera.centerX;
+        const cy = camera.centerY;
 
-        const gap_x = (camera.width - total_width) / 2;
-        const gap_y = (camera.height - total_height) / 2;
-
+        const TAU = Math.PI * 2;
         for (let i = 0; i < this.NUM_MOLES; i++) {
-            const x =
-                (i % this.NUM_COLS) * (cell_size + cell_pad) +
-                cell_size / 2 +
-                gap_x;
-            const y =
-                Math.floor(i / this.NUM_COLS) * (cell_size + cell_pad) +
-                cell_size / 2 +
-                gap_y;
-
             const slot = new Slot(i);
+            this.slots.push(slot);
+
+            // Angle (starting from top left slot)
+            const a = (i / this.NUM_MOLES) * TAU - Phaser.Math.DegToRad(145);
+
+            // Position the gfx pos for each slot (where character will appear)
+            const char_gfx = this.add.sprite("blerb");
+            const char_rad = 160;
+            char_gfx.x = Math.cos(a) * char_rad + cx;
+            char_gfx.y = Math.sin(a) * char_rad + cy;
+            char_gfx.visible = false;
+            slot.char_gfx = char_gfx;
 
             // Graphics for the key letter around circle
+            const key_rad = 240;
             slot.key_gfx = this.add.text(
-                x - 50,
-                y - 50,
+                Math.cos(a - 0.1) * key_rad + cx,
+                Math.sin(a - 0.1) * key_rad + cy,
                 "QWEDSA".split("")[i],
                 {
                     fontFamily: FONT_FAMILY,
                     fontSize: 18,
                     color: "#ffffff",
-                },
+                }
             );
 
             // Segment arc around circle
             const arc = this.add.graphics();
             arc.lineStyle(4, 0x7dff7d, 0.4);
             arc.beginPath();
-            const start = Math.PI + (i / this.NUM_MOLES) * (Math.PI * 2);
-            arc.arc(
-                camera.centerX,
-                camera.centerY,
-                220,
-                start - 0,
-                start + (Math.PI * 2) / this.NUM_MOLES,
-                false,
-            );
+            const start = Math.PI + (i / this.NUM_MOLES) * TAU;
+            arc.arc(cx, cy, 220, start, start + TAU / this.NUM_MOLES, false);
             arc.strokePath();
             arc.alpha = 0;
             slot.seg_gfx = arc;
-
-            this.slots.push(slot);
-
-            const off =
-                (i / this.NUM_MOLES) * Math.PI * 2 - Phaser.Math.DegToRad(145);
-            const rad = 160;
-            this.slot_gfx[i].x = camera.centerX + Math.cos(off) * rad;
-            this.slot_gfx[i].y = camera.centerY + Math.sin(off) * rad;
-            this.slot_gfx[i].visible = false;
-            slot.key_gfx.x = camera.centerX + Math.cos(off - 0.1) * 240;
-            slot.key_gfx.y = camera.centerY + Math.sin(off - 0.1) * 240;
         }
     }
 
@@ -461,7 +439,7 @@ export class Game extends Scene {
     }
 
     update_playing() {
-        const { bonus_cells, cells, camera, slots, bombs } = this;
+        const { bonus_group, cells, camera, slots, bombs } = this;
 
         // Update cells
         cells.forEach((c) => {
@@ -479,7 +457,7 @@ export class Game extends Scene {
             this.spawn_cell(cells, camera);
         }
 
-        const bonuses = bonus_cells.getChildren().map((c) => c as BonusCell);
+        const bonuses = bonus_group.getChildren().map((c) => c as BonusCell);
 
         // Update bombs
         bombs.forEach((b) => {
@@ -527,7 +505,7 @@ export class Game extends Scene {
                 camera.centerX,
                 camera.centerY,
                 pointer.position.x,
-                pointer.position.y,
+                pointer.position.y
             );
             if (dist >= Game.RADIUS * 0.85) {
                 // Drop a bomba!
@@ -604,12 +582,12 @@ export class Game extends Scene {
         this.cell_spawn_timer = this.cell_spawn_rate;
         this.cell_spawn_rate = Math.max(
             this.cell_spawn_rate_fastest,
-            this.cell_spawn_rate + this.cell_spawn_rate_inc,
+            this.cell_spawn_rate + this.cell_spawn_rate_inc
         );
     }
 
     handle_slot(m: Slot) {
-        const { keys, slot_gfx } = this;
+        const { keys } = this;
 
         if (keys[m.idx].isDown) {
             m.key_gfx?.setTint(0xff8800);
@@ -622,10 +600,10 @@ export class Game extends Scene {
         switch (m.state) {
             case slot_state.MOVING_IN:
                 if (m.timer-- <= 0) {
-                    slot_gfx[m.idx].visible = true;
-                    slot_gfx[m.idx].setAngle(Phaser.Math.FloatBetween(-20, 20));
-                    slot_gfx[m.idx].play(
-                        ["bot1", "sidebot", "blerb", "blerb2", "goop"][m.type],
+                    m.char_gfx.visible = true;
+                    m.char_gfx.setAngle(Phaser.Math.FloatBetween(-20, 20));
+                    m.char_gfx.play(
+                        ["bot1", "sidebot", "blerb", "blerb2", "goop"][m.type]
                     );
                     m.state = slot_state.ALIVE;
                     m.timer = m.life;
@@ -648,7 +626,7 @@ export class Game extends Scene {
                         this.sfx.happy.play();
                         this.score += SCORE_GOODY_SURVIVED;
                         this.tweens.add({
-                            targets: slot_gfx[m.idx],
+                            targets: m.char_gfx,
                             alpha: 0,
                             duration: 250,
                         });
@@ -660,16 +638,16 @@ export class Game extends Scene {
                 m.timer = 25;
                 break;
             case slot_state.MISSED:
-                slot_gfx[m.idx].flipY = true;
+                m.char_gfx.flipY = true;
                 m.state = slot_state.MOVING_OUT;
                 m.timer = 25;
                 break;
             case slot_state.MOVING_OUT:
                 if (m.timer-- <= 0) {
                     m.state = slot_state.EMPTY;
-                    slot_gfx[m.idx].visible = false;
-                    slot_gfx[m.idx].flipY = false;
-                    slot_gfx[m.idx].alpha = 1;
+                    m.char_gfx.visible = false;
+                    m.char_gfx.flipY = false;
+                    m.char_gfx.alpha = 1;
                 }
                 break;
             default:
@@ -683,7 +661,7 @@ export class Game extends Scene {
         m.state = slot_state.WHACKED;
 
         const hit_gfx = this.add
-            .sprite(this.slot_gfx[i].x, this.slot_gfx[i].y, "hit")
+            .sprite(m.char_gfx.x, m.char_gfx.y, "hit")
             .play("hit", false)
             .once("animationcomplete", () => {
                 hit_gfx.destroy();
@@ -697,7 +675,7 @@ export class Game extends Scene {
             this.score += SCORE_BOT_KILL;
             this.health += HP_BOT_KILL;
             this.whacks_good++;
-            this.slot_gfx[i].play("bot1_die");
+            m.char_gfx.play("bot1_die");
             this.sfx.yell.play();
         } else if (m.type == slot_type.SPLODER) {
             console.log("Timer:", m.timer);
@@ -709,7 +687,7 @@ export class Game extends Scene {
             // brrrrp!
             this.health += HP_FRIENDLY_FIRE;
             this.whacks_bad++;
-            this.slot_gfx[i].visible = false;
+            m.char_gfx.visible = false;
             this.flash();
             this.sfx.ohno.play();
         }
@@ -722,7 +700,7 @@ export class Game extends Scene {
         const w = Phaser.Math.Between(0, this.camera.width);
         const h = Phaser.Math.Between(0, this.camera.height);
         const c = new BonusCell(this, w, h);
-        this.bonus_cells.add(c, true);
+        this.bonus_group.add(c, true);
     }
 
     spawn_slots() {
@@ -740,8 +718,8 @@ export class Game extends Scene {
                 this.slot_spawn_life +
                     Phaser.Math.Between(
                         -this.slot_spawn_life_deviation,
-                        this.slot_spawn_life_deviation,
-                    ),
+                        this.slot_spawn_life_deviation
+                    )
             );
 
             const is_sploder =
@@ -768,12 +746,12 @@ export class Game extends Scene {
         // Update every frame
         this.slot_spawn_chance = Math.min(
             this.slot_spawn_chance_max,
-            this.slot_spawn_chance + this.slot_spawn_chance_inc,
+            this.slot_spawn_chance + this.slot_spawn_chance_inc
         );
         // Get faster each time
         this.slot_spawn_life = Math.max(
             this.slot_spawn_life_min,
-            this.slot_spawn_life + this.slot_spawn_life_inc,
+            this.slot_spawn_life + this.slot_spawn_life_inc
         );
     }
 }

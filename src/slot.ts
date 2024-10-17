@@ -21,6 +21,7 @@ export class Slot {
     timer: number;
     life: number;
     idx: number;
+    char_gfx: Phaser.GameObjects.Sprite | null;
     key_gfx: Phaser.GameObjects.Text | null;
     seg_gfx: Phaser.GameObjects.Graphics | null;
 
