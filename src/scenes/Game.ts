@@ -36,10 +36,7 @@ enum game_state {
 }
 
 export class Game extends Scene {
-    keys: Phaser.Input.Keyboard.Key[];
-
     camera: Phaser.Cameras.Scene2D.Camera;
-    msg_text: Phaser.GameObjects.Text;
     bomb_group: Phaser.GameObjects.Group;
     bonus_group: Phaser.GameObjects.Group;
     score_text: Phaser.GameObjects.Text;
@@ -56,6 +53,8 @@ export class Game extends Scene {
         exp2: Phaser.Sound.BaseSound;
         happy: Phaser.Sound.BaseSound;
     };
+
+    keys: Phaser.Input.Keyboard.Key[];
 
     state: game_state;
     state_time: number;
