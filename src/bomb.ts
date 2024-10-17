@@ -9,21 +9,13 @@ export class Bomb extends Phaser.GameObjects.Sprite {
         this.timer = 0;
         this.charge_time = charge_time;
     }
-    ignite(x: number, y: number, scene: Phaser.Scene) {
+    ignite(x: number, y: number) {
         this.timer = this.charge_time;
         this.visible = true;
         this.x = x;
         this.y = y;
         this.scale = 0.75;
         this.play("meta");
-        /*scene.tweens.add({
-            targets: this,
-            scale: 1,
-            duration: 300,
-            repeat: 0,
-            delay: 80,
-            ease: "bounce.out",
-        });*/
     }
     update() {
         if (this.timer > 0) {
