@@ -32,6 +32,7 @@ export class Game extends Scene {
     static MAX_CELLS = 50;
     static MAX_BOMBS = 30;
     static RADIUS = 220;
+    static NUM_SLOTS = 6;
 
     state: game_state;
     state_time: number;
@@ -54,10 +55,6 @@ export class Game extends Scene {
         exp2: Phaser.Sound.BaseSound;
         happy: Phaser.Sound.BaseSound;
     };
-
-    NUM_COLS = 3;
-    NUM_ROWS = 2;
-    NUM_MOLES = 6;
 
     last_flash: number;
 
@@ -87,7 +84,7 @@ export class Game extends Scene {
     slot_spawn_ai_chance: number; // between 0-1
     slot_spawn_sploder_chance: number; // between 0-1
     slot_spawn_life: number;
-    slot_spawn_life_min: number; // minum time on screen at fastest
+    slot_spawn_life_min: number; // minimum time on screen at fastest
     slot_spawn_life_deviation: number; // life +/- deviation
     slot_spawn_life_inc: number; // popup up for less and less time
 
@@ -335,25 +332,25 @@ export class Game extends Scene {
         // Circular playfield: keys and slots graphics
         const cx = camera.centerX;
         const cy = camera.centerY;
-
         const TAU = Math.PI * 2;
-        for (let i = 0; i < this.NUM_MOLES; i++) {
+
+        for (let i = 0; i < Game.NUM_SLOTS; i++) {
             const slot = new Slot(i);
             this.slots.push(slot);
 
             // Angle (starting from top left slot)
-            const a = (i / this.NUM_MOLES) * TAU - Phaser.Math.DegToRad(145);
+            const a = (i / Game.NUM_SLOTS) * TAU - Phaser.Math.DegToRad(145);
 
             // Position the gfx pos for each slot (where character will appear)
             const char_gfx = this.add.sprite("blerb");
-            const char_rad = 160;
+            const char_rad = Game.RADIUS - 60;
             char_gfx.x = Math.cos(a) * char_rad + cx;
             char_gfx.y = Math.sin(a) * char_rad + cy;
             char_gfx.visible = false;
             slot.char_gfx = char_gfx;
 
             // Graphics for the key letter around circle
-            const key_rad = 240;
+            const key_rad = Game.RADIUS + 20;
             slot.key_gfx = this.add.text(
                 Math.cos(a - 0.1) * key_rad + cx,
                 Math.sin(a - 0.1) * key_rad + cy,
@@ -369,8 +366,8 @@ export class Game extends Scene {
             const arc = this.add.graphics();
             arc.lineStyle(4, 0x7dff7d, 0.4);
             arc.beginPath();
-            const start = Math.PI + (i / this.NUM_MOLES) * TAU;
-            arc.arc(cx, cy, 220, start, start + TAU / this.NUM_MOLES, false);
+            const start = Math.PI + (i / Game.NUM_SLOTS) * TAU;
+            arc.arc(cx, cy, Game.RADIUS, start, start + TAU / Game.NUM_SLOTS);
             arc.strokePath();
             arc.alpha = 0;
             slot.seg_gfx = arc;
@@ -419,8 +416,8 @@ export class Game extends Scene {
         const { camera } = this;
         const target = new Phaser.Geom.Point(camera.centerX, camera.centerY);
         const a = Phaser.Math.Angle.Between(src_x, src_y, target.x, target.y);
-        target.x -= Math.cos(a) * 200;
-        target.y -= Math.sin(a) * 200;
+        target.x -= Math.cos(a) * (Game.RADIUS - 20);
+        target.y -= Math.sin(a) * (Game.RADIUS - 20);
         return target;
     }
 
@@ -493,7 +490,7 @@ export class Game extends Scene {
                 // triggered: do bonus!
                 this.sfx.exp.play();
                 b.destroy();
-                this.slow_cell_wave();
+                this.bonus_explode_all_cells();
             }
         });
 
@@ -556,7 +553,7 @@ export class Game extends Scene {
         });
     }
 
-    slow_cell_wave() {
+    bonus_explode_all_cells() {
         // Destroy the entire cell wave
         this.cells.forEach((c) => {
             if (!c.visible) return;
