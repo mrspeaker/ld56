@@ -8,6 +8,7 @@ import {
     FONT_PRIMARY_STROKE,
 } from "../font.ts";
 import { type stats, mk_stats } from "../stats.ts";
+import { CellSpawner } from "../cell_spawner.ts";
 
 // Game constants
 const SCORE_BOT_KILL = 100;
@@ -69,12 +70,7 @@ export class Game extends Scene {
 
     stats: stats;
 
-    cell_spawn_timer: number;
-    cell_spawn_rate: number;
-    cell_spawn_rate_inc: number;
-    cell_spawn_rate_fastest: number;
-    cell_spawn_speed_base: number;
-    cell_spawn_speed_inc: number;
+    cell_spawn: CellSpawner;
 
     slot_spawn_chance: number;
     slot_spawn_chance_max: number;
@@ -96,12 +92,7 @@ export class Game extends Scene {
         this.stats = mk_stats(HP_INITIAL);
         this.bomb_cooldown = 0;
 
-        this.cell_spawn_timer = 500; // initial delay
-        this.cell_spawn_rate = 110; // spawn 1 every X ticks to start
-        this.cell_spawn_rate_inc = -1.8; // every spawn, reduce rate
-        this.cell_spawn_rate_fastest = 30; // fastest spawn rate
-        this.cell_spawn_speed_base = 0.35; // base speed of new cells
-        this.cell_spawn_speed_inc = 0.01; // how much faster each subsequent cell gets
+        this.cell_spawn = new CellSpawner(this.spawn_cell.bind(this));
 
         this.slot_spawn_chance = 0.08;
         this.slot_spawn_chance_max = 10;
@@ -436,10 +427,7 @@ export class Game extends Scene {
             }
         });
 
-        if (this.cell_spawn_timer-- <= 0) {
-            // spawn a cell
-            this.spawn_cell(cells, camera);
-        }
+        this.cell_spawn.update();
 
         const bonuses = bonus_group.getChildren().map((c) => c as BonusCell);
 
@@ -544,7 +532,8 @@ export class Game extends Scene {
         });
     }
 
-    spawn_cell(cells: Cell[], camera: Phaser.Cameras.Scene2D.Camera) {
+    spawn_cell(speed: number) {
+        const { cells, camera } = this;
         const c = cells.find((c) => c.target == null);
         if (c) {
             c.visible = true;
@@ -552,16 +541,8 @@ export class Game extends Scene {
             c.x = (Math.cos(a) * camera.width) / 2 + camera.centerX;
             c.y = (Math.sin(a) * camera.height) / 2 + camera.centerY;
             c.target = this.get_cell_target(c.x, c.y);
-            // Get faster each new cell
-            c.speed = this.cell_spawn_speed_base;
-            this.cell_spawn_speed_base += this.cell_spawn_speed_inc;
+            c.speed = speed;
         }
-        // Spawn faster each new cell
-        this.cell_spawn_timer = this.cell_spawn_rate;
-        this.cell_spawn_rate = Math.max(
-            this.cell_spawn_rate_fastest,
-            this.cell_spawn_rate + this.cell_spawn_rate_inc,
-        );
     }
 
     handle_slot(m: Slot) {
