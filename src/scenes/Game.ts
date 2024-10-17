@@ -36,11 +36,12 @@ export class Game extends Scene {
 
     state: game_state;
     state_time: number;
+
     slots: Slot[];
     cells: Cell[];
     bombs: Bomb[];
     bomb_group: Phaser.GameObjects.Group;
-    bonus_cells: Phaser.GameObjects.Group;
+    bonus_group: Phaser.GameObjects.Group;
 
     score_text: Phaser.GameObjects.Text;
     hp_text: Phaser.GameObjects.Text;
@@ -149,20 +150,19 @@ export class Game extends Scene {
     }
 
     create_sound() {
-        const theme = this.sound.add("theme", { volume: 0.5 });
-        theme.play();
-        theme.loop = true;
-        this.theme = theme;
+        const { sound } = this;
         this.sfx = {
-            laugh: this.sound.add("laugh", { volume: 1 }),
-            ohno: this.sound.add("ohno", { volume: 1 }),
-            punch: this.sound.add("punch", { volume: 1 }),
-            splode: this.sound.add("splode", { volume: 1 }),
-            yell: this.sound.add("yell", { volume: 1 }),
-            exp: this.sound.add("exp", { volume: 1 }),
-            exp2: this.sound.add("exp2", { volume: 0.5 }),
-            happy: this.sound.add("happy", { volume: 0.5 }),
+            theme: sound.add("theme", { volume: 0.5, loop: true }),
+            laugh: sound.add("laugh", { volume: 1 }),
+            ohno: sound.add("ohno", { volume: 1 }),
+            punch: sound.add("punch", { volume: 1 }),
+            splode: sound.add("splode", { volume: 1 }),
+            yell: sound.add("yell", { volume: 1 }),
+            exp: sound.add("exp", { volume: 1 }),
+            exp2: sound.add("exp2", { volume: 0.5 }),
+            happy: sound.add("happy", { volume: 0.5 }),
         };
+        this.sfx.theme.play();
     }
 
     create_input() {
@@ -219,7 +219,7 @@ export class Game extends Scene {
             align: "right",
         };
 
-        this.score_text = this.add.text(392, 15, "0", font); //.setOrigin(0.5);
+        this.score_text = this.add.text(392, 15, "0", font);
         this.hp_text = this.add.text(720, 15, "100", font);
 
         this.add.image(camera.centerX - 200, 40, "score");
@@ -248,7 +248,7 @@ export class Game extends Scene {
     }
 
     create_fg(camera: Phaser.Cameras.Scene2D.Camera) {
-        // Lil bg effects
+        // Lil light effects
         this.add.particles(0, 100, "drop", {
             x: { min: 0, max: camera.width },
             y: { min: -100, max: camera.height },
@@ -266,12 +266,14 @@ export class Game extends Scene {
     }
 
     create_helps() {
-        // Help texts
         const helpbot = this.add.image(150, 400, "helpbot");
         helpbot.setAlpha(0);
+
         const helpmouse = this.add.image(870, 400, "helpmouse");
         helpmouse.setAlpha(0);
         helpmouse.setScale(0.8);
+
+        // Fade in and out first help screen
         this.tweens.chain({
             targets: helpbot,
             onComplete: () => {
@@ -290,6 +292,8 @@ export class Game extends Scene {
                 },
             ],
         });
+
+        // Fade in and out second help screen
         this.tweens.chain({
             targets: helpmouse,
             onComplete: () => {
@@ -702,53 +706,58 @@ export class Game extends Scene {
 
     spawn_slots() {
         const { slots } = this;
-        if (Phaser.Math.Between(0, 1000) < this.slot_spawn_chance * 100) {
-            const free_slots = slots.filter((s) => s.state == slot_state.EMPTY);
-            if (free_slots.length == 0) return;
-            const m = Phaser.Utils.Array.GetRandom(free_slots);
-            m.state = slot_state.MOVING_IN;
-            m.timer = 30;
-
-            // How long to show?
-            m.life = Math.max(
-                this.slot_spawn_life_min,
-                this.slot_spawn_life +
-                    Phaser.Math.Between(
-                        -this.slot_spawn_life_deviation,
-                        this.slot_spawn_life_deviation
-                    )
-            );
-
-            const is_sploder =
-                Phaser.Math.Between(0, 100) <
-                this.slot_spawn_sploder_chance * 100;
-            const is_bot =
-                Phaser.Math.Between(0, 100) < this.slot_spawn_ai_chance * 100;
-
-            if (is_sploder) {
-                m.type = slot_type.SPLODER;
-            } else if (is_bot) {
-                m.type =
-                    Phaser.Math.Between(0, 100) < 50
-                        ? slot_type.AI_BOT
-                        : slot_type.AI_BOT_SIDE;
-            } else {
-                m.type =
-                    Phaser.Math.Between(0, 100) < 50
-                        ? slot_type.BLOB1
-                        : slot_type.BLOB2;
-            }
-        }
 
         // Update every frame
         this.slot_spawn_chance = Math.min(
             this.slot_spawn_chance_max,
             this.slot_spawn_chance + this.slot_spawn_chance_inc
         );
+
         // Get faster each time
         this.slot_spawn_life = Math.max(
             this.slot_spawn_life_min,
             this.slot_spawn_life + this.slot_spawn_life_inc
         );
+
+        // Spawn someone?
+        if (!(Phaser.Math.Between(0, 1000) < this.slot_spawn_chance * 100)) {
+            return;
+        }
+
+        const free_slots = slots.filter((s) => s.state == slot_state.EMPTY);
+        if (free_slots.length == 0) return;
+
+        const m = Phaser.Utils.Array.GetRandom(free_slots);
+        m.state = slot_state.MOVING_IN;
+        m.timer = 30;
+
+        // How long to show?
+        m.life = Math.max(
+            this.slot_spawn_life_min,
+            this.slot_spawn_life +
+                Phaser.Math.Between(
+                    -this.slot_spawn_life_deviation,
+                    this.slot_spawn_life_deviation
+                )
+        );
+
+        const is_sploder =
+            Phaser.Math.Between(0, 100) < this.slot_spawn_sploder_chance * 100;
+        const is_bot =
+            Phaser.Math.Between(0, 100) < this.slot_spawn_ai_chance * 100;
+
+        if (is_sploder) {
+            m.type = slot_type.SPLODER;
+        } else if (is_bot) {
+            m.type =
+                Phaser.Math.Between(0, 100) < 50
+                    ? slot_type.AI_BOT
+                    : slot_type.AI_BOT_SIDE;
+        } else {
+            m.type =
+                Phaser.Math.Between(0, 100) < 50
+                    ? slot_type.BLOB1
+                    : slot_type.BLOB2;
+        }
     }
 }
