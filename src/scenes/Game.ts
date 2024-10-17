@@ -1,5 +1,5 @@
 import { Scene } from "phaser";
-import { Cell } from "../cell.ts";
+import { Cell, BonusCell } from "../cell.ts";
 import { Bomb } from "../bomb.ts";
 import { Slot, slot_state, slot_type } from "../slot.ts";
 import { FONT_FAMILY } from "../font.ts";
@@ -40,6 +40,7 @@ export class Game extends Scene {
     cells: Cell[];
     bombs: Bomb[];
     bomb_group: Phaser.GameObjects.Group;
+    bonus_cells: Phaser.GameObjects.Group;
 
     score_text: Phaser.GameObjects.Text;
     hp_text: Phaser.GameObjects.Text;
@@ -330,6 +331,7 @@ export class Game extends Scene {
             this.bombs.push(b);
             this.bomb_group.add(b, true);
         }
+        this.bonus_cells = this.add.group();
 
         this.slot_gfx = this.add
             .group({ key: "blerb", frameQuantity: this.NUM_MOLES })
@@ -459,7 +461,7 @@ export class Game extends Scene {
     }
 
     update_playing() {
-        const { cells, camera, slots, bombs } = this;
+        const { bonus_cells, cells, camera, slots, bombs } = this;
 
         // Update cells
         cells.forEach((c) => {
@@ -477,6 +479,8 @@ export class Game extends Scene {
             this.spawn_cell(cells, camera);
         }
 
+        const bonuses = bonus_cells.getChildren().map((c) => c as BonusCell);
+
         // Update bombs
         bombs.forEach((b) => {
             if (!b.update()) {
@@ -487,15 +491,31 @@ export class Game extends Scene {
                 });
                 // Find nearby cells and destroy them.
                 cells.forEach((c) => {
+                    if (!c.visible) return;
                     const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
                     if (d < BOMB_EXPLOSION_RADIUS) {
+                        c.remove();
                         this.score += SCORE_CELL_KILL;
                         this.sfx.exp2.play();
                         this.cells_killed++;
-                        c.target = null;
-                        c.visible = false;
                     }
                 });
+                // And trigger any nearby bonuses too.
+                bonuses.forEach((c) => {
+                    const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
+                    if (d < BOMB_EXPLOSION_RADIUS) {
+                        c.alive = false;
+                    }
+                });
+            }
+        });
+
+        bonuses.forEach((b) => {
+            if (b.update()) {
+                // triggered: do bonus!
+                this.sfx.exp.play();
+                b.destroy();
+                this.slow_cell_wave();
             }
         });
 
@@ -555,6 +575,16 @@ export class Game extends Scene {
             whacks_missed: this.whacks_missed,
             cells_killed: this.cells_killed,
             cells_escaped: this.cells_escaped,
+        });
+    }
+
+    slow_cell_wave() {
+        // Destroy the entire cell wave
+        this.cells.forEach((c) => {
+            if (!c.visible) return;
+            this.score += SCORE_CELL_KILL;
+            this.cells_killed++;
+            c.remove();
         });
     }
 
@@ -688,6 +718,11 @@ export class Game extends Scene {
     spawn_clearer(slot_idx: number) {
         // make a "clearer" pickup
         console.log("add a clearer near slot", slot_idx);
+
+        const w = Phaser.Math.Between(0, this.camera.width);
+        const h = Phaser.Math.Between(0, this.camera.height);
+        const c = new BonusCell(this, w, h);
+        this.bonus_cells.add(c, true);
     }
 
     spawn_slots() {
