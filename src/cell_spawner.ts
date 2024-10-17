@@ -24,9 +24,9 @@ export class CellSpawner {
             return;
         }
         this.on_spawn(this.speed_base);
-        this.speed_base += this.speed_inc;
         // Spawn faster each new cell
         this.timer = this.rate;
         this.rate = Math.max(this.rate_fastest, this.rate + this.rate_inc);
+        this.speed_base += this.speed_inc;
     }
 }

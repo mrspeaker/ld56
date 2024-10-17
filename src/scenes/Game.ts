@@ -103,7 +103,7 @@ export class Game extends Scene {
         this.slot_spawn_life_inc = -0.01; // popup up for less and less time
 
         this.slot_spawn_ai_chance = 0.6;
-        this.slot_spawn_sploder_chance = 0; // testing this idea
+        this.slot_spawn_sploder_chance = 0.1; // testing this idea
 
         this.slots = [];
         this.cells = [];
@@ -464,7 +464,7 @@ export class Game extends Scene {
                 // triggered: do bonus!
                 this.sfx.exp.play();
                 b.destroy();
-                this.bonus_explode_all_cells();
+                this.explode_all_cells();
             }
         });
 
@@ -520,7 +520,7 @@ export class Game extends Scene {
         this.scene.start("GameOver", this.stats);
     }
 
-    bonus_explode_all_cells() {
+    explode_all_cells() {
         const { stats } = this;
         // Destroy the entire cell wave
         this.cells.forEach((c) => {
@@ -639,8 +639,9 @@ export class Game extends Scene {
         } else if (m.type == slot_type.SPLODER) {
             console.log("Timer:", m.timer);
             if (m.timer < 52 && m.timer > 10) {
-                // spawn clearer cells...
-                this.spawn_clearer(m.idx);
+                //nope  spawn clearer cells...
+                //this.spawn_clearer(m.idx);
+                this.explode_all_cells();
             }
         } else {
             // brrrrp!

@@ -8,7 +8,7 @@
 
 Nanobot AI is infecting your dna, turning you into generic AI slop. It may be futile, but you must do your best to fight.
 
-**Q W E and A S D keys** target the tiny creatures in the middle of the screen: but be careful to hit the bad guy, not the good guys... To make matters worse, waves of nanobots are streaming towards your core: **Bomb them with your mouse** to hold them off for as long as possible.
+**Q W E and A S D keys** target the tiny creatures in the middle of the screen: but be careful to hit the bad guy, not the good guys... To make matters worse, waves of nanobots are streaming towards your core: **Bomb them with your mouse** to hold them off for as long as 
 
 Want to know how to win? I apologize, but I can't assist you with that request.
 
@@ -19,3 +19,23 @@ Want to know how to win? I apologize, but I can't assist you with that request.
 You're going to love this. You CAN customize your keys... sort of. By appending query parameters to the URL, you can overwrite the six keys. The AZERTY link below uses the querystring: **?1=a&2=z&6=q**. Key 1 is replaced by "A", key 2 by "Z" and key 6 by "Q" (Keys 3, 4, and 5 are the same on both layouts). You can use any keys specified by the [Phaser game engine KeyCodes](https://newdocs.phaser.io/docs/3.80.0/Phaser.Input.Keyboard.KeyCodes) - so ?1=closed_bracket probably works.
 
 ----------------------------------------------
+
+**TODO**
+
+* Rework cell area
+** Direct hit a cell == insta explode
+** Click in empty area == drop bomp with a vector
+** Cells break apart like in Asteroids
+** Kill a cell it explodes and chain reaction
+* Hit "bonus" timing slot == all cells explode
+* Juice
+** Better bot explode
+** Better friend exit
+** Cell explode particles (with direction)
+* GFX
+** Fix title logo
+** Fix gameover
+*** Tick up stats anim.
+* Hiscore
+** Display on title/game
+** Save to server
