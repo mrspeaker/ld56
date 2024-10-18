@@ -6,6 +6,7 @@ import {
     FONT_FAMILY,
     FONT_PRIMARY_COLOR,
     FONT_PRIMARY_STROKE,
+    ONE_UP_FONT,
 } from "../font.ts";
 import { type stats, mk_stats } from "../stats.ts";
 import { CellSpawner } from "../cell_spawner.ts";
@@ -67,6 +68,7 @@ export class Game extends Scene {
 
     last_flash: number;
     bomb_cooldown: number; // bomb placement cooldown
+    pointer_was_down: boolean;
 
     slot_spawner: SlotSpawner;
     cell_spawner: CellSpawner;
@@ -88,6 +90,7 @@ export class Game extends Scene {
         this.bombs = [];
 
         this.last_flash = Date.now();
+        this.pointer_was_down = false;
     }
 
     create() {
@@ -328,7 +331,7 @@ export class Game extends Scene {
         }
     }
 
-    draw_score() {
+    update_score() {
         const { score_text, hp_text, stats } = this;
         const { score, health } = stats;
         const anim = (scene: Phaser.Scene, target: any) => {
@@ -387,7 +390,7 @@ export class Game extends Scene {
             default:
                 break;
         }
-        this.draw_score();
+        this.update_score();
     }
 
     update_playing() {
@@ -433,6 +436,11 @@ export class Game extends Scene {
                 this.explode_all_cells();
             }
         });
+
+        // Add new bonues
+        if (Phaser.Math.Between(0, 1000) == 1) {
+            this.spawn_bonus_cell();
+        }
 
         // HP
         if (stats.health > 100) stats.health = 100;
@@ -499,15 +507,50 @@ export class Game extends Scene {
         this.scene.start("GameOver", this.stats);
     }
 
+    add_one_up(msg: string, x: number, y: number) {
+        const txt = this.add.text(x, y, msg, ONE_UP_FONT);
+        this.tweens.add({
+            targets: txt,
+            y: "-=30",
+            alpha: 0,
+            duration: 400,
+            onComplete: () => txt.destroy(),
+        });
+    }
+
+    cell_combo_add(x: number, y: number) {
+        const { stats } = this;
+        stats.cell_combo++;
+        this.add_one_up("x" + stats.cell_combo, x, y - 20);
+    }
+
+    cell_combo_lose(x: number, y: number) {
+        console.log("lost");
+        const { stats } = this;
+        if (stats.cell_combo > stats.cell_combo_longest) {
+            stats.cell_combo_longest = stats.cell_combo;
+        }
+        stats.cell_combo = 0;
+    }
+
     handle_outside_click() {
         const { camera, cells } = this;
         const pointer = this.input.activePointer;
         const { x: px, y: py } = pointer.position;
 
         this.bomb_cooldown--;
-        if (!pointer.isDown) {
+        if (pointer.isDown) {
+            if (this.pointer_was_down) {
+                // holiding down mouse
+                return;
+            }
+        } else {
+            // released mouse
+            this.pointer_was_down = false;
             return;
         }
+
+        this.pointer_was_down = true;
 
         // Any direct hits on cells?
         let direct_hit = false;
@@ -517,6 +560,7 @@ export class Game extends Scene {
             if (d < c.radius) {
                 direct_hit = true;
                 this.remove_cell(c);
+                this.cell_combo_add(px, py);
                 // - add to bonus multplier
                 // - add gfx get
                 return;
@@ -527,6 +571,7 @@ export class Game extends Scene {
             this.bomb_cooldown = BOMB_COOLDOWN;
             return;
         }
+        this.cell_combo_lose(px, py);
 
         // no hit...drop a buomp.
         if (this.bomb_cooldown <= 0) {
@@ -634,10 +679,7 @@ export class Game extends Scene {
         }
     }
 
-    spawn_clearer(slot_idx: number) {
-        // make a "clearer" pickup
-        console.log("add a clearer near slot", slot_idx);
-
+    spawn_bonus_cell() {
         const w = Phaser.Math.Between(0, this.camera.width);
         const h = Phaser.Math.Between(0, this.camera.height);
         const c = new BonusCell(this, w, h);
