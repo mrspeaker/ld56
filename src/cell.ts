@@ -7,6 +7,7 @@ export class Cell extends Phaser.GameObjects.Sprite {
     target: Phaser.Geom.Point | null;
     speed: number;
     cell_type: cell_type.CELL;
+    radius: number;
     constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y, "drop");
         this.cell_type = cell_type.CELL;
@@ -52,6 +53,7 @@ export class BonusCell extends Phaser.GameObjects.Sprite {
         this.alive = true;
         this.playAfterDelay("drop", Phaser.Math.Between(0, 1500));
         this.setTintFill(0xff5500);
+        this.radius = 30; // ... how do the scales get set?
         this.setScale(0.6);
     }
     // REturns true if cell got to target

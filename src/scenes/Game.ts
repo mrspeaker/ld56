@@ -422,7 +422,7 @@ export class Game extends Scene {
         bombs.forEach((b) => this.update_bomb(b, bonuses));
 
         // Add new bombs
-        this.handle_bomb_clicks();
+        this.handle_outside_clicks();
 
         // Update bonuses
         bonuses.forEach((b) => {
@@ -494,17 +494,45 @@ export class Game extends Scene {
         this.scene.start("GameOver", this.stats);
     }
 
-    handle_bomb_clicks() {
-        const { camera } = this;
+    handle_outside_click() {
+        const { camera, cells } = this;
         const pointer = this.input.activePointer;
+        const { x: px, y: py } = pointer.position;
 
         this.bomb_cooldown--;
-        if (pointer.isDown && this.bomb_cooldown <= 0) {
+        if (!pointer.isDown) {
+            return;
+        }
+
+        // Any direct hits on cells?
+        let direct_hit = false;
+        cells.forEach((c) => {
+            if (!c.visible) return;
+            // Is direct hit?
+            const d = Phaser.Math.Distance.Between(px, py, c.x, c.y);
+            console.log("Cell dist to pointer:", d);
+            if (d < c.radius) {
+                direct_hit == true;
+                // - remove cell
+                c.remove();
+                // - add score
+                // - add to bonus multplier
+                return;
+            }
+        });
+
+        if (direct_hit) {
+            this.bomb_cooldown = BOMB_COOLDOWN;
+            return;
+        }
+
+        // no hit...drop a buomp.
+        if (this.bomb_cooldown <= 0) {
             const dist = Phaser.Math.Distance.Between(
                 camera.centerX,
                 camera.centerY,
-                pointer.position.x,
-                pointer.position.y,
+                px,
+                py,
             );
             if (dist >= RADIUS * 0.85) {
                 // Drop a bomba!
@@ -512,7 +540,7 @@ export class Game extends Scene {
                 this.sfx.splode.play();
                 const b = this.bombs.find((b) => b.explode());
                 if (b) {
-                    b.ignite(pointer.position.x, pointer.position.y);
+                    b.ignite(py, py);
                 }
             }
         }
