@@ -59,16 +59,14 @@ export class Game extends Scene {
 
     state: game_state;
     state_time: number;
+    stats: stats;
 
     slots: Slot[];
     cells: Cell[];
     bombs: Bomb[];
 
     last_flash: number;
-
     bomb_cooldown: number; // bomb placement cooldown
-
-    stats: stats;
 
     slot_spawner: SlotSpawner;
     cell_spawner: CellSpawner;
@@ -418,58 +416,13 @@ export class Game extends Scene {
         this.cell_spawner.update();
 
         // Bombs and bonuses
-
         const bonuses = bonus_group.getChildren().map((c) => c as BonusCell);
 
         // Update bombs
-        bombs.forEach((b) => {
-            if (!b.update()) {
-                // exlodey
-                const e = this.add.sprite(b.x, b.y, "hit").play("hit");
-                e.once("animationcomplete", () => {
-                    e.destroy();
-                });
-                // Find nearby cells and destroy them.
-                cells.forEach((c) => {
-                    if (!c.visible) return;
-                    const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
-                    if (d < BOMB_EXPLOSION_RADIUS) {
-                        c.remove();
-                        stats.score += SCORE_CELL_KILL;
-                        stats.cells_killed++;
-                        this.sfx.exp2.play();
-                    }
-                });
-                // And trigger any nearby bonuses too.
-                bonuses.forEach((c) => {
-                    const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
-                    if (d < BOMB_EXPLOSION_RADIUS) {
-                        c.alive = false;
-                    }
-                });
-            }
-        });
+        bombs.forEach((b) => this.update_bomb(b, bonuses));
 
         // Add new bombs
-        const pointer = this.input.activePointer;
-        this.bomb_cooldown--;
-        if (pointer.isDown && this.bomb_cooldown <= 0) {
-            const dist = Phaser.Math.Distance.Between(
-                camera.centerX,
-                camera.centerY,
-                pointer.position.x,
-                pointer.position.y,
-            );
-            if (dist >= RADIUS * 0.85) {
-                // Drop a bomba!
-                this.bomb_cooldown = BOMB_COOLDOWN;
-                this.sfx.splode.play();
-                const b = this.bombs.find((b) => b.explode());
-                if (b) {
-                    b.ignite(pointer.position.x, pointer.position.y);
-                }
-            }
-        }
+        this.handle_bomb_clicks();
 
         // Update bonuses
         bonuses.forEach((b) => {
@@ -495,6 +448,41 @@ export class Game extends Scene {
             stats.health > 50 ? 0 : ((50 - stats.health) / 50) * 40;
     }
 
+    update_bomb(b: Bomb, bonuses: BonusCell[]) {
+        const { cells, stats } = this;
+
+        if (b.update()) {
+            // not explody
+            return;
+        }
+
+        // Explodey
+        const e = this.add.sprite(b.x, b.y, "hit").play("hit");
+        e.once("animationcomplete", () => {
+            e.destroy();
+        });
+
+        // Find nearby cells and destroy them.
+        cells.forEach((c) => {
+            if (!c.visible) return;
+            const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
+            if (d < BOMB_EXPLOSION_RADIUS) {
+                c.remove();
+                stats.score += SCORE_CELL_KILL;
+                stats.cells_killed++;
+                this.sfx.exp2.play();
+            }
+        });
+
+        // And trigger any nearby bonuses too.
+        bonuses.forEach((c) => {
+            const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
+            if (d < BOMB_EXPLOSION_RADIUS) {
+                c.alive = false;
+            }
+        });
+    }
+
     update_dead() {
         if (this.state_time === 1) {
             this.flash();
@@ -504,6 +492,30 @@ export class Game extends Scene {
             return;
         }
         this.scene.start("GameOver", this.stats);
+    }
+
+    handle_bomb_clicks() {
+        const { camera } = this;
+        const pointer = this.input.activePointer;
+
+        this.bomb_cooldown--;
+        if (pointer.isDown && this.bomb_cooldown <= 0) {
+            const dist = Phaser.Math.Distance.Between(
+                camera.centerX,
+                camera.centerY,
+                pointer.position.x,
+                pointer.position.y,
+            );
+            if (dist >= RADIUS * 0.85) {
+                // Drop a bomba!
+                this.bomb_cooldown = BOMB_COOLDOWN;
+                this.sfx.splode.play();
+                const b = this.bombs.find((b) => b.explode());
+                if (b) {
+                    b.ignite(pointer.position.x, pointer.position.y);
+                }
+            }
+        }
     }
 
     explode_all_cells() {
@@ -583,8 +595,6 @@ export class Game extends Scene {
         } else if (m.type == slot_type.SPLODER) {
             console.log("Timer:", m.timer);
             if (m.timer < 52 && m.timer > 10) {
-                //nope  spawn clearer cells...
-                //this.spawn_clearer(m.idx);
                 this.explode_all_cells();
             }
         } else {
