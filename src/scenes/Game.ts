@@ -422,7 +422,7 @@ export class Game extends Scene {
         bombs.forEach((b) => this.update_bomb(b, bonuses));
 
         // Add new bombs
-        this.handle_outside_clicks();
+        this.handle_outside_click();
 
         // Update bonuses
         bonuses.forEach((b) => {
@@ -467,9 +467,7 @@ export class Game extends Scene {
             if (!c.visible) return;
             const d = Phaser.Math.Distance.Between(b.x, b.y, c.x, c.y);
             if (d < BOMB_EXPLOSION_RADIUS) {
-                c.remove();
-                stats.score += SCORE_CELL_KILL;
-                stats.cells_killed++;
+                this.remove_cell(c);
                 this.sfx.exp2.play();
             }
         });
@@ -481,6 +479,13 @@ export class Game extends Scene {
                 c.alive = false;
             }
         });
+    }
+
+    remove_cell(c: Cell) {
+        const { stats } = this;
+        c.remove();
+        stats.score += SCORE_CELL_KILL;
+        stats.cells_killed++;
     }
 
     update_dead() {
@@ -508,15 +513,12 @@ export class Game extends Scene {
         let direct_hit = false;
         cells.forEach((c) => {
             if (!c.visible) return;
-            // Is direct hit?
             const d = Phaser.Math.Distance.Between(px, py, c.x, c.y);
-            console.log("Cell dist to pointer:", d);
             if (d < c.radius) {
-                direct_hit == true;
-                // - remove cell
-                c.remove();
-                // - add score
+                direct_hit = true;
+                this.remove_cell(c);
                 // - add to bonus multplier
+                // - add gfx get
                 return;
             }
         });
@@ -540,20 +542,17 @@ export class Game extends Scene {
                 this.sfx.splode.play();
                 const b = this.bombs.find((b) => b.explode());
                 if (b) {
-                    b.ignite(py, py);
+                    b.ignite(px, py);
                 }
             }
         }
     }
 
     explode_all_cells() {
-        const { stats } = this;
         // Destroy the entire cell wave
         this.cells.forEach((c) => {
             if (!c.visible) return;
-            stats.score += SCORE_CELL_KILL;
-            stats.cells_killed++;
-            c.remove();
+            this.remove_cell(c);
         });
     }
 

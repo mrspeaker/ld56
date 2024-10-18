@@ -14,6 +14,7 @@ export class Cell extends Phaser.GameObjects.Sprite {
         this.speed = Phaser.Math.FloatBetween(0.13, 0.25);
         this.angle = Phaser.Math.Angle.RandomDegrees();
         this.playAfterDelay("drop", Phaser.Math.Between(0, 1500));
+        this.radius = 30; // ... how do the scales get set?
     }
     remove() {
         this.target = null;
@@ -53,7 +54,6 @@ export class BonusCell extends Phaser.GameObjects.Sprite {
         this.alive = true;
         this.playAfterDelay("drop", Phaser.Math.Between(0, 1500));
         this.setTintFill(0xff5500);
-        this.radius = 30; // ... how do the scales get set?
         this.setScale(0.6);
     }
     // REturns true if cell got to target
