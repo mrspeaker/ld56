@@ -438,7 +438,7 @@ export class Game extends Scene {
         });
 
         // Add new bonues
-        if (Phaser.Math.Between(0, 1000) == 1) {
+        if (Phaser.Math.Between(0, 5000) == 1) {
             this.spawn_bonus_cell();
         }
 
@@ -525,7 +525,6 @@ export class Game extends Scene {
     }
 
     cell_combo_lose(x: number, y: number) {
-        console.log("lost");
         const { stats } = this;
         if (stats.cell_combo > stats.cell_combo_longest) {
             stats.cell_combo_longest = stats.cell_combo;
