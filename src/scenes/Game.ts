@@ -594,7 +594,7 @@ export class Game extends Scene {
             this.sfx.yell.play();
         } else if (m.type == slot_type.SPLODER) {
             console.log("Timer:", m.timer);
-            if (m.timer < 52 && m.timer > 10) {
+            if (m.timer < 52) {
                 this.explode_all_cells();
             }
         } else {
