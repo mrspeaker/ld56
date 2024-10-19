@@ -560,8 +560,14 @@ export class Game extends Scene {
                 direct_hit = true;
                 this.remove_cell(c);
                 this.cell_combo_add(px, py);
+                const p = this.add.particles(c.x, c.y, "drop", {
+                    speed: 200,
+                    lifespan: 500,
+                    scale: { start: 0.4, end: 0 },
+                });
+                p.explode(16);
+                this.sfx.punch.play();
                 // - add to bonus multplier
-                // - add gfx get
                 return;
             }
         });
