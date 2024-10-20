@@ -61,6 +61,10 @@ export class Preloader extends Scene {
             frameWidth: 128,
             frameHeight: 128,
         });
+        this.load.spritesheet("botdie", "botdie.png", {
+            frameWidth: 128,
+            frameHeight: 128,
+        });
         this.load.spritesheet("sidebot", "sidebot.png", {
             frameWidth: 128,
             frameHeight: 128,
@@ -118,10 +122,7 @@ export class Preloader extends Scene {
         });
         this.anims.create({
             key: "bot1_die",
-            frames: this.anims.generateFrameNumbers("bot1", {
-                start: 10,
-                end: 19,
-            }),
+            frames: this.anims.generateFrameNumbers("botdie"),
             frameRate: 20,
             repeat: 0,
         });
