@@ -558,14 +558,23 @@ export class Game extends Scene {
             const d = Phaser.Math.Distance.Between(px, py, c.x, c.y);
             if (d < c.radius) {
                 direct_hit = true;
+                const a = Phaser.Math.Angle.Between(px, py, c.x, c.y);
+
                 this.remove_cell(c);
                 this.cell_combo_add(px, py);
+
                 const p = this.add.particles(c.x, c.y, "drop", {
                     speed: 200,
                     lifespan: 500,
                     scale: { start: 0.4, end: 0 },
+                    angle: {
+                        min: Phaser.Math.RadToDeg(a) - 30,
+                        max: Phaser.Math.RadToDeg(a) + 30,
+                    },
                 });
                 p.explode(16);
+                this.add_hit_anim(c.x, c.y);
+
                 this.sfx.punch.play();
                 // - add to bonus multplier
                 return;
@@ -602,6 +611,7 @@ export class Game extends Scene {
         // Destroy the entire cell wave
         this.cells.forEach((c) => {
             if (!c.visible) return;
+            this.add_hit_anim(c.x, c.y);
             this.remove_cell(c);
         });
     }
@@ -646,17 +656,21 @@ export class Game extends Scene {
         }
     }
 
+    add_hit_anim(x: number, y: number) {
+        const hit = this.add
+            .sprite(x, y, "hit")
+            .play("hit", false)
+            .once("animationcomplete", () => {
+                hit.destroy();
+            });
+    }
+
     handle_whack(m: Slot) {
         const { camera, stats } = this;
 
         m.state = slot_state.WHACKED;
 
-        const hit_gfx = this.add
-            .sprite(m.char_gfx?.x ?? 0, m.char_gfx?.y ?? 0, "hit")
-            .play("hit", false)
-            .once("animationcomplete", () => {
-                hit_gfx.destroy();
-            });
+        this.add_hit_anim(m.char_gfx?.x ?? 0, m.char_gfx?.y ?? 0);
         camera.shake(100, 0.01);
 
         this.sfx.punch.play();
