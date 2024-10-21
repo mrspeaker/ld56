@@ -532,6 +532,24 @@ export class Game extends Scene {
         stats.cell_combo = 0;
     }
 
+    fire_towards(src_x: number, src_y: number, dst_x: number, dst_y: number) {
+        // shoot projectile towards cursor...
+        const s = this.add.sprite(src_x, src_y, "drop");
+        s.setScale(0.5);
+        s.setTintFill(0xffffff);
+        s.alpha = 0;
+        this.tweens.add({
+            targets: s,
+            duration: 150,
+            alpha: 1,
+            onComplete: () => {
+                s.destroy();
+            },
+            x: dst_x,
+            y: dst_y,
+        });
+    }
+
     handle_outside_click() {
         const { camera, cells } = this;
         const pointer = this.input.activePointer;
@@ -550,6 +568,7 @@ export class Game extends Scene {
         }
 
         this.pointer_was_down = true;
+        this.fire_towards(camera.centerX, camera.centerY, px, py);
 
         // Any direct hits on cells?
         let direct_hit = false;
@@ -561,6 +580,7 @@ export class Game extends Scene {
                 const a = Phaser.Math.Angle.Between(px, py, c.x, c.y);
 
                 this.remove_cell(c);
+                // this.add.sprite(c.x, c.y,
                 this.cell_combo_add(px, py);
 
                 const p = this.add.particles(c.x, c.y, "drop", {
