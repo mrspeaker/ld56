@@ -11,6 +11,7 @@ import {
 import { type stats, mk_stats } from "../stats.ts";
 import { CellSpawner } from "../cell_spawner.ts";
 import { SlotSpawner } from "../slot_spawner.ts";
+import { from_center } from "../math.ts";
 
 // Game constants
 const SCORE_BOT_KILL = 100;
@@ -534,7 +535,10 @@ export class Game extends Scene {
 
     fire_towards(src_x: number, src_y: number, dst_x: number, dst_y: number) {
         // shoot projectile towards cursor...
-        const s = this.add.sprite(src_x, src_y, "drop");
+        const s = this.add.sprite(src_x, src_y, "streak");
+        s.setRotation(
+            Phaser.Math.Angle.Between(src_x, src_y, dst_x, dst_y) + Math.PI / 2,
+        );
         s.setScale(0.5);
         s.setTintFill(0xffffff);
         s.alpha = 0;
@@ -554,6 +558,8 @@ export class Game extends Scene {
         const { camera, cells } = this;
         const pointer = this.input.activePointer;
         const { x: px, y: py } = pointer.position;
+        const cx = camera.centerX;
+        const cy = camera.centerY;
 
         this.bomb_cooldown--;
         if (pointer.isDown) {
@@ -568,7 +574,20 @@ export class Game extends Scene {
         }
 
         this.pointer_was_down = true;
-        this.fire_towards(camera.centerX, camera.centerY, px, py);
+
+        const d = Phaser.Math.Distance.Between(cx, cy, px, py);
+
+        // Are we clicking outside the middle?
+        if (d < RADIUS * 0.85) {
+            // ...Nope
+            return;
+        }
+
+        // Shoot a projectile streak if it travels far enough
+        //if (d > RADIUS * 1.5) {
+        //    const { x: sx, y: sy } = from_center(cx, cy, px, py, RADIUS);
+        //    this.fire_towards(sx, sy, px, py);
+        //}
 
         // Any direct hits on cells?
         let direct_hit = false;
@@ -577,6 +596,7 @@ export class Game extends Scene {
             const d = Phaser.Math.Distance.Between(px, py, c.x, c.y);
             if (d < c.radius) {
                 direct_hit = true;
+                const d_perc = d / c.radius;
                 const a = Phaser.Math.Angle.Between(px, py, c.x, c.y);
 
                 this.remove_cell(c);
@@ -587,10 +607,8 @@ export class Game extends Scene {
                     speed: 200,
                     lifespan: 500,
                     scale: { start: 0.4, end: 0 },
-                    angle: {
-                        min: Phaser.Math.RadToDeg(a) - 30,
-                        max: Phaser.Math.RadToDeg(a) + 30,
-                    },
+                    accelerationX: Math.cos(a) * (1000 * d_perc),
+                    accelerationY: Math.sin(a) * (1000 * d_perc),
                 });
                 p.explode(16);
                 this.add_hit_anim(c.x, c.y);
@@ -609,20 +627,12 @@ export class Game extends Scene {
 
         // no hit...drop a buomp.
         if (this.bomb_cooldown <= 0) {
-            const dist = Phaser.Math.Distance.Between(
-                camera.centerX,
-                camera.centerY,
-                px,
-                py,
-            );
-            if (dist >= RADIUS * 0.85) {
-                // Drop a bomba!
-                this.bomb_cooldown = BOMB_COOLDOWN;
-                this.sfx.splode.play();
-                const b = this.bombs.find((b) => b.explode());
-                if (b) {
-                    b.ignite(px, py);
-                }
+            // Drop a bomba!
+            this.bomb_cooldown = BOMB_COOLDOWN;
+            this.sfx.splode.play();
+            const b = this.bombs.find((b) => b.explode());
+            if (b) {
+                b.ignite(px, py);
             }
         }
     }

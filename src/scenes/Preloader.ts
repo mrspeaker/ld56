@@ -26,6 +26,7 @@ export class Preloader extends Scene {
         this.load.image("hp", "hp.png");
         this.load.image("helpbot", "helpbot.png");
         this.load.image("helpmouse", "helpmouse.png");
+        this.load.image("streak", "streak.png");
 
         this.load.audio("theme", ["sfx/squirf.mp3", "sfx/squirf.ogg"]);
         this.load.audio("laugh", "sfx/laugh.mp3");
