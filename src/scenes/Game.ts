@@ -594,15 +594,14 @@ export class Game extends Scene {
         cells.forEach((c) => {
             if (!c.visible) return;
             const d = Phaser.Math.Distance.Between(px, py, c.x, c.y);
-            if (d < c.radius) {
+            const d_perc = d / c.radius;
+            if (d_perc < 0.5) {
                 direct_hit = true;
-                const d_perc = d / c.radius;
-                const a = Phaser.Math.Angle.Between(px, py, c.x, c.y);
-
-                this.remove_cell(c);
-                // this.add.sprite(c.x, c.y,
                 this.cell_combo_add(px, py);
-
+            }
+            if (d < c.radius) {
+                this.remove_cell(c);
+                const a = Phaser.Math.Angle.Between(px, py, c.x, c.y);
                 const p = this.add.particles(c.x, c.y, "drop", {
                     speed: 200,
                     lifespan: 500,
@@ -612,10 +611,7 @@ export class Game extends Scene {
                 });
                 p.explode(16);
                 this.add_hit_anim(c.x, c.y);
-
                 this.sfx.punch.play();
-                // - add to bonus multplier
-                return;
             }
         });
 
