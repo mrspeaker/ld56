@@ -590,17 +590,20 @@ export class Game extends Scene {
         //}
 
         // Any direct hits on cells?
-        let direct_hit = false;
+        let bullseye = false;
+        let hit_a_cell = false;
         cells.forEach((c) => {
             if (!c.visible) return;
             const d = Phaser.Math.Distance.Between(px, py, c.x, c.y);
             const d_perc = d / c.radius;
-            if (d_perc < 0.5) {
-                direct_hit = true;
-                this.cell_combo_add(px, py);
-            }
             if (d < c.radius) {
+                hit_a_cell = true;
                 this.remove_cell(c);
+                if (d_perc < 0.5) {
+                    bullseye = true;
+                    this.cell_combo_add(px, py);
+                }
+                // Add some particles
                 const a = Phaser.Math.Angle.Between(px, py, c.x, c.y);
                 const p = this.add.particles(c.x, c.y, "drop", {
                     speed: 200,
@@ -615,11 +618,14 @@ export class Game extends Scene {
             }
         });
 
-        if (direct_hit) {
+        if (!bullseye) {
+            this.cell_combo_lose(px, py);
+        }
+
+        if (hit_a_cell) {
             this.bomb_cooldown = BOMB_COOLDOWN;
             return;
         }
-        this.cell_combo_lose(px, py);
 
         // no hit...drop a buomp.
         if (this.bomb_cooldown <= 0) {
