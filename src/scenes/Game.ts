@@ -11,7 +11,6 @@ import {
 import { type stats, mk_stats } from "../stats.ts";
 import { CellSpawner } from "../cell_spawner.ts";
 import { SlotSpawner } from "../slot_spawner.ts";
-import { from_center } from "../math.ts";
 
 // Game constants
 const SCORE_BOT_KILL = 100;
@@ -495,6 +494,8 @@ export class Game extends Scene {
         c.remove();
         stats.score += SCORE_CELL_KILL;
         stats.cells_killed++;
+        const s = this.add.sprite(c.x, c.y, "drop");
+        s.setTint(0xff0000);
     }
 
     update_dead() {
